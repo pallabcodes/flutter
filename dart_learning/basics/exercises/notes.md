@@ -704,3 +704,106 @@ Recommended Add-on (for top-tier interviews):
 #### To strengthen your answer:
 
 "In Flutter, everything is a widget, but not every widget needs to manage its own state. I think of StatelessWidgets like pure functions – they take input and render output. If internal changes are needed — like handling animations, counters, or dynamic data — that’s where StatefulWidgets come in. I mentally map it to React's useState or useReducer, which control reactivity within a component."
+
+#### Why build function should be pure, not heavy and complex ?
+
+Absolutely! Here's your content reformatted into a clean, structured **Markdown** document that's perfect for future reference or documentation purposes:
+
+---
+
+# 🛠️ Why `build()` Should Be Fast, Pure, and Side-Effect Free in Flutter
+
+## ⚡ Performance
+
+* `build()` can be called **frequently**:
+
+  * On every `setState()`
+  * On screen resize
+  * On theme or locale changes
+* **Avoid heavy computations** or operations here:
+
+  * No network calls
+  * No expensive loops
+  * No blocking operations (e.g., file I/O)
+
+**If you violate this**, your app **will lag, stutter**, and become less responsive.
+
+---
+
+## ✅ Best Practices for `build()`
+
+### What `build()` **Should Do**:
+
+* Create and **return widget trees**.
+* Use **local variables** for layout/configuration.
+* Call **pure methods** that return widgets.
+
+### What `build()` **Should NOT Do**:
+
+* ❌ Perform **network requests** or database queries
+* ❌ Execute **heavy computations** or large loops
+* ❌ Mutate state or call `setState()` directly
+* ❌ Trigger side effects
+
+---
+
+## 🧠 Predictability
+
+Keeping `build()` **pure and free from side effects** helps:
+
+* Maintain a **predictable UI**
+* Avoid **hard-to-debug issues**
+* Simplify **testing and maintenance**
+
+---
+
+## 🧪 Analogy for React Developers
+
+In **React**:
+
+* You wouldn't put a `fetch()` call or a big loop in `render()`.
+* You'd use `useEffect()` or event handlers for side effects.
+* `render()` is expected to be **pure**, just like Flutter’s `build()`.
+
+---
+
+## ✅ Example: Proper Usage
+
+```dart
+@override
+Widget build(BuildContext context) {
+  final border = OutlineInputBorder(
+    borderRadius: BorderRadius.circular(8.0),
+    borderSide: BorderSide(color: Colors.grey),
+  ); // ✅ OK: local UI variable
+
+  return Scaffold(
+    appBar: AppBar(title: Text('My App')),
+    body: Center(
+      child: Text('Hello World'),
+    ),
+  );
+}
+```
+
+All **state mutations, data fetching**, and **side effects** should be handled in:
+
+* `initState()`
+* Event handlers
+* `FutureBuilder`, `StreamBuilder`, etc.
+
+---
+
+## 🧾 Summary
+
+| Principle            | Why It Matters                             |
+| -------------------- | ------------------------------------------ |
+| **Fast**             | Avoids jank, ensures smooth performance    |
+| **Pure**             | Keeps logic predictable and testable       |
+| **Side-effect free** | Prevents bugs and improves maintainability |
+
+> Keep `build()` focused on **describing the UI** for the current state.
+> Keep **logic, data, and side effects** *outside* of it—just like top Flutter teams do!
+
+---
+
