@@ -21,7 +21,7 @@ String greet(String name, [String title = "Mr./Ms."]) {
 }
 
 /// Higher-order function that accepts a callback.
-void execute(Function callback) {
+void execute(void Function() callback) {
   callback();
 }
 
@@ -31,12 +31,12 @@ void sayHello() {
 }
 
 /// Returns a function that multiplies a value by a given factor.
-Function multiplier(int factor) {
+int Function(int) multiplier(int factor) {
   return (int value) => value * factor;
 }
 
 /// Returns a function that adds a value to a given number.
-Function makeAdder(int addBy) {
+int Function(int) makeAdder(int addBy) {
   return (int i) => i + addBy;
 }
 
@@ -94,7 +94,20 @@ extension StringExtension on String {
   return (42, name: 'Alice');
 }
 
-/// Generic function to swap two values.
+/**
+ * Typescript for below function will look like
+ * 
+ * function swap<T, U>(first: T, second: U): [T, U] {
+ *   return [first, second];
+ * }
+ * 
+ * Usage example
+ * const result = swap(42, "Hello");
+ * console.log(result[0]); // 42
+ * console.log(result[1]); // "Hello"
+ */
+
+// Generic function to swap two values.
 (T, U) swap<T, U>(T first, U second) {
   return (first, second); // Ensure the return type matches (T, U)
 }

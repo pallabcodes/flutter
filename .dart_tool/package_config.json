@@ -14,6 +14,18 @@
       "languageVersion": "2.18"
     },
     {
+      "name": "http",
+      "rootUri": "file:///home/pallabkayal/.pub-cache/hosted/pub.dev/http-1.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "http_parser",
+      "rootUri": "file:///home/pallabkayal/.pub-cache/hosted/pub.dev/http_parser-4.0.2",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
       "name": "lints",
       "rootUri": "file:///home/pallabkayal/.pub-cache/hosted/pub.dev/lints-2.1.1",
       "packageUri": "lib/",
@@ -26,10 +38,40 @@
       "languageVersion": "2.12"
     },
     {
+      "name": "path",
+      "rootUri": "file:///home/pallabkayal/.pub-cache/hosted/pub.dev/path-1.9.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "source_span",
+      "rootUri": "file:///home/pallabkayal/.pub-cache/hosted/pub.dev/source_span-1.10.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.1"
+    },
+    {
+      "name": "string_scanner",
+      "rootUri": "file:///home/pallabkayal/.pub-cache/hosted/pub.dev/string_scanner-1.4.1",
+      "packageUri": "lib/",
+      "languageVersion": "3.1"
+    },
+    {
       "name": "synchronized",
       "rootUri": "file:///home/pallabkayal/.pub-cache/hosted/pub.dev/synchronized-3.1.0+1",
       "packageUri": "lib/",
       "languageVersion": "3.0"
+    },
+    {
+      "name": "term_glyph",
+      "rootUri": "file:///home/pallabkayal/.pub-cache/hosted/pub.dev/term_glyph-1.2.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.1"
+    },
+    {
+      "name": "typed_data",
+      "rootUri": "file:///home/pallabkayal/.pub-cache/hosted/pub.dev/typed_data-1.3.2",
+      "packageUri": "lib/",
+      "languageVersion": "2.17"
     },
     {
       "name": "dart_learning",
@@ -38,7 +80,7 @@
       "languageVersion": "3.0"
     }
   ],
-  "generated": "2025-07-04T01:19:03.905410Z",
+  "generated": "2025-07-04T15:28:50.171629Z",
   "generator": "pub",
   "generatorVersion": "3.1.0"
 }

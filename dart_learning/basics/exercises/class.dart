@@ -1,10 +1,34 @@
 import 'package:meta/meta.dart'; // Import for @immutable annotation
 
-// Interface (already using implements)
+// Interface Segregation
 abstract class VehicleInterface {
   // Public abstract methods
   void drive();
   void park();
+}
+
+abstract class Maintenance {
+  void performMaintenance();
+  bool needsMaintenance();
+}
+
+abstract class VehicleMonitor {
+  void recordSpeed(int speed);
+  void recordLocation(String location);
+}
+
+// Single Responsibility
+mixin Logger {
+  void log(String message) => print('LOG: $message');
+}
+
+mixin Tracker {
+  DateTime _lastUsed = DateTime.now();
+
+  void track() {
+    _lastUsed = DateTime.now();
+    print('Last used: $_lastUsed');
+  }
 }
 
 // Enhanced Vehicle class
@@ -31,27 +55,6 @@ abstract class Vehicle implements VehicleInterface {
 
   // Add the move method
   void move(); // Abstract method that subclasses must implement
-}
-
-// A mixin to add logging ability
-mixin Logger {
-  void log(String message) => print('LOG: $message');
-}
-
-// A mixin to add tracking ability
-mixin Tracker {
-  DateTime _lastUsed = DateTime.now();
-
-  void track() {
-    _lastUsed = DateTime.now();
-    print('Last used: $_lastUsed');
-  }
-}
-
-// Interface (implicit interface in Dart)
-abstract class Maintenance {
-  void performMaintenance();
-  bool needsMaintenance();
 }
 
 // Enhanced Car class
@@ -199,38 +202,133 @@ class ElectricCar extends Car with Logger, Tracker {
   }
 }
 
-// Singleton pattern
+/**
+ * Implements the Singleton Pattern for car creation.
+ * Ensures only one instance of CarFactory exists throughout the application.
+ * 
+ * Pattern Purpose:
+ * - Maintains a single source of truth for car creation
+ * - Prevents multiple instances of the factory
+ * - Controls access to the shared resource
+ * 
+ * Usage Example:
+ * ```dart
+ * final factory = CarFactory(); // Always returns the same instance
+ * var car = factory.createCar('BMW', 'M3');
+ * ```
+ * 
+ * TypeScript Equivalent:
+ * ```typescript
+ * class CarFactory {
+ *   private static instance: CarFactory;
+ *   private constructor() {}
+ * 
+ *   public static getInstance(): CarFactory {
+ *     if (!CarFactory.instance) {
+ *       CarFactory.instance = new CarFactory();
+ *     }
+ *     return CarFactory.instance;
+ *   }
+ * 
+ *   public createCar(brand: string, model: string): Car {
+ *     return new Car(brand, model);
+ *   }
+ * }
+ * ```
+ */
 class CarFactory {
+  /// The single instance of CarFactory that will be reused.
+  /// Static and final to ensure it's initialized once and cannot be changed.
   static final CarFactory _instance = CarFactory._internal();
 
-  // Private constructor
+  /// Private constructor to prevent direct instantiation.
+  /// Named with underscore to follow Dart's privacy convention.
   CarFactory._internal();
 
-  // Factory constructor
+  /// Factory constructor that returns the singleton instance.
+  /// This is the public way to get the CarFactory instance.
+  ///
+  /// Returns:
+  ///   The single instance of [CarFactory].
   factory CarFactory() {
     return _instance;
   }
 
+  /// Creates a new car instance with the specified brand and model.
+  ///
+  /// Parameters:
+  ///   [brand] - The manufacturer of the car (e.g., 'BMW', 'Tesla')
+  ///   [model] - The specific model of the car (e.g., 'M3', 'Model S')
+  ///
+  /// Returns:
+  ///   A new [Car] instance with the specified parameters.
+  ///
+  /// Example:
+  /// ```dart
+  /// final factory = CarFactory();
+  /// final bmw = factory.createCar('BMW', 'M3');
+  /// ```
   Car createCar(String brand, String model) {
     return Car.withBrandModel(brand, model);
   }
 }
 
-// Immutable class
+/**
+ * Represents immutable specifications for a car.
+ * All properties are final to ensure immutability.
+ * Annotated with @immutable to enforce immutability at compile time.
+ * 
+ * TypeScript Equivalent:
+ * ```typescript
+ * interface CarSpecsProps {
+ *   readonly engine: string;
+ *   readonly horsepower: number;
+ *   readonly acceleration: number;
+ * }
+ * 
+ * class CarSpecs {
+ *   readonly engine: string;
+ *   readonly horsepower: number;
+ *   readonly acceleration: number;
+ * 
+ *   constructor(props: CarSpecsProps) {
+ *     this.engine = props.engine;
+ *     this.horsepower = props.horsepower;
+ *     this.acceleration = props.acceleration;
+ *     Object.freeze(this); // Make instance immutable
+ *   }
+ * 
+ *   equals(other: CarSpecs): boolean {
+ *     return this.engine === other.engine &&
+ *            this.horsepower === other.horsepower &&
+ *            this.acceleration === other.acceleration;
+ *   }
+ * }
+ * ```
+ */
 @immutable
 class CarSpecs {
+  /// The engine specification (e.g., 'V8', 'Electric')
   final String engine;
+
+  /// The horsepower rating of the car
   final int horsepower;
+
+  /// The 0-60 mph acceleration time in seconds
   final double acceleration;
 
-  // Const constructor for compile-time constants
+  /// Creates an immutable CarSpecs instance.
+  /// Uses const constructor to allow compile-time constant creation.
+  ///
+  /// Parameters are required to ensure complete specification.
   const CarSpecs({
     required this.engine,
     required this.horsepower,
     required this.acceleration,
   });
 
-  // Implementing equality
+  /// Implements value equality for CarSpecs.
+  /// Two specs are equal if all their properties are equal.
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -239,21 +337,22 @@ class CarSpecs {
           horsepower == other.horsepower &&
           acceleration == other.acceleration;
 
+  /// Implements consistent hash code for equality comparison.
+  /// Uses Object.hash to generate a combined hash of all properties.
   @override
   int get hashCode => Object.hash(engine, horsepower, acceleration);
 }
 
-// Enum with enhanced features
+// Enhanced Enums
 enum CarType {
   sedan(doors: 4),
-  coupe(doors: 2),
-  suv(doors: 5);
+  coupe(doors: 2);
 
   final int doors;
   const CarType({required this.doors});
 }
 
-// Extension methods
+// Extension Methods
 extension CarExtension on Car {
   void printDetails() {
     print('Vehicle Type: $vehicleType');
@@ -279,11 +378,6 @@ sealed class Shape {
 // "This class can only be implemented, not extended"
 abstract interface class DatabaseConnector {
   void connect();
-}
-
-abstract interface class VehicleMonitor {
-  void recordSpeed(int speed);
-  void recordLocation(String location);
 }
 
 // "This class is meant to be mixed in"
@@ -338,6 +432,15 @@ class Tesla extends ElectricVehicle
   void recordLocation(String location) {
     log('Location recorded: $location');
   }
+}
+
+// Immutable class for Vehicle specifications
+@immutable
+abstract class VehicleSpecs {
+  final String type;
+  final int wheels;
+
+  const VehicleSpecs(this.type, this.wheels);
 }
 
 void main() {
@@ -413,7 +516,7 @@ void main() {
 
   // When the value might be null
   nullableString = null;
-  print(nullableString?.length); // Safe access when might be null
+  print(nullableString?.length ?? 0); // Safe access when might be null
   print(nullableString ?? "Default Value"); // Provide default when null
 
   // For chained operations when value might be null

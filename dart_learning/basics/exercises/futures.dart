@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:convert'; // For JSON decoding
 import 'dart:isolate';
+
+import 'package:http/http.dart' as http;
 
 /// Typedef for function signatures.
 typedef IntOperation = int Function(int a, int b);
@@ -63,18 +66,19 @@ Future<void> fetchWithErrorHandling() async {
 
 /// Demonstrates `Future.any` and `Future.wait`.
 Future<void> demonstrateFutureUtilities() async {
-  // `Future.any` example: Resolves with the first completed future.
+  // `Future.any` example: Resolves with the first completed future. Similar to Promise.race in JS
   final firstCompleted = await Future.any([
     Future.delayed(Duration(seconds: 2), () => "First"),
     Future.delayed(Duration(seconds: 1), () => "Second"),
   ]);
   print("First completed: $firstCompleted");
 
-  // `Future.wait` example: Resolves when all futures complete.
+  // `Future.wait` example: Resolves when all futures complete. Similart to Promise.all in JS
   final allResults = await Future.wait([
     Future.delayed(Duration(seconds: 1), () => "Task 1"),
     Future.delayed(Duration(seconds: 2), () => "Task 2"),
   ]);
+
   print("All results: $allResults");
 }
 
@@ -170,7 +174,7 @@ void drawShape<T extends Shape>(T shape) {
   return (id: 1, name: "Alice");
 }
 
-/// Demonstrates stream transformations.
+/// Demonstrates stream transformations. Streams in Dart are similar to Observable in RxJS or EventEmitter in Node.js.
 Stream<int> numberStream() async* {
   for (int i = 1; i <= 5; i++) {
     await Future.delayed(Duration(seconds: 1));
@@ -185,15 +189,18 @@ Stream<int> debounce(Stream<int> stream, Duration duration) {
 
   controller = StreamController<int>(
     onListen: () {
-      subscription = stream.listen((event) {
-        debounceTimer?.cancel();
-        debounceTimer = Timer(duration, () {
-          controller?.add(event);
-        });
-      }, onError: controller?.addError, onDone: () {
-        debounceTimer?.cancel();
-        controller?.close();
-      });
+      subscription = stream.listen(
+          (event) {
+            debounceTimer?.cancel();
+            debounceTimer = Timer(duration, () {
+              controller?.add(event);
+            });
+          },
+          onError: controller?.addError,
+          onDone: () {
+            debounceTimer?.cancel();
+            controller?.close();
+          });
     },
     onPause: () => subscription?.pause(),
     onResume: () => subscription?.resume(),
@@ -241,6 +248,50 @@ Stream<List<int>> batchStream(Stream<int> stream, int batchSize) async* {
     yield List<int>.from(batch);
   }
 }
+
+/// Demonstrates an actual API request using the `http` package.
+Future<void> fetchApiData() async {
+  const url = 'https://jsonplaceholder.typicode.com/posts/1'; // Example API
+  try {
+    // Make a GET request
+    final response = await http.get(Uri.parse(url));
+
+    // Check if the request was successful
+    if (response.statusCode == 200) {
+      // Decode the JSON response
+      final data = jsonDecode(response.body);
+      print('API Response: $data');
+    } else {
+      print('Failed to fetch data. Status code: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error occurred while making the API request: $e');
+  }
+}
+
+/// Option 1: Simplest - Direct creation
+// Future<Future<String>> futureOfFuture() {
+//   return Future.value(Future.value("Nested future result!"));
+// }
+
+/// Option 2: Using async/await - More readable
+Future<Future<String>> futureOfFuture() async {
+  return Future.delayed(Duration(seconds: 1),
+      () => Future.value("Nested future result!" as FutureOr<Future<String>>?));
+}
+
+/// Option 3: Using Completer - More control
+// Future<Future<String>> futureOfFuture() {
+//   final completer = Completer<Future<String>>();
+//   completer.complete(Future.value("Nested future result!"));
+//   return completer.future;
+// }
+
+/// Option 4: Your current version - Explicit with delay
+// Future<Future<String>> futureOfFuture() {
+//   return Future<Future<String>>.value(Future<String>.delayed(
+//       Duration(seconds: 1), () => "Nested future result!"));
+// }
 
 /// Example usage of functions and advanced Dart features.
 void main() async {
@@ -355,4 +406,29 @@ void main() async {
 
   var (id: personId, name: personName) = getPersonRecord();
   print("ID: $personId, Name: $personName"); // Prints: ID: 1, Name: Alice
+
+  print("Fetching data from API...");
+  await fetchApiData(); // Demonstrates an actual API request
+  print("API request completed.");
+
+  // Demonstrate Future<Future<T>>
+  print("Demonstrating Future<Future<T>>...");
+  Future<Future<String>> nested = futureOfFuture();
+  // Awaiting once gives you a Future<String>
+  Future<String> inner = await nested;
+  // Awaiting again gives you the actual value
+  String value = await inner;
+  print(value); // Prints: Nested future result!
+
+  // Or, you can flatten with double await:
+  String flattened = await await futureOfFuture();
+  print(flattened); // Prints: Nested future result!
+
+  // Demonstrate Future<Future<T>> with .then()
+  print("Demonstrating Future<Future<T>> with .then()...");
+  futureOfFuture().then((innerFuture) {
+    innerFuture.then((value) {
+      print("With .then(): $value"); // Prints: Nested future result!
+    });
+  });
 }
