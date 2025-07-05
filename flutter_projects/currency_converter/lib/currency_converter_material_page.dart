@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 /// The main page for the currency converter app.
 /// Now a StatefulWidget to handle conversion logic and state.
 class CurrencyConverterMaterialPage extends StatefulWidget {
-  const CurrencyConverterMaterialPage({Key? key}) : super(key: key);
+  // const CurrencyConverterMaterialPage({Key? key}) : super(key: key); // verbose
+  const CurrencyConverterMaterialPage({super.key});
 
   @override
   State<CurrencyConverterMaterialPage> createState() =>

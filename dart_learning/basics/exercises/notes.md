@@ -659,4 +659,48 @@ RenderObject ← Flutter lays out & paints text on screen
 | Render Tree  | Final painted output     | Painters and decorators     |
 
 
+# Question about Stateless vs Statefull widget ?
 
+What I am simply understanding betwen stateful and stateless 
+
+if the value needs to created once and doesn't change unless it parent widget rebuld then Stateless (it is kinda like a React component with useRef)
+
+but if the any value or such changes and due to that very widget might need to change or such, then Statefull (it is like using a compoent using useState or useContext or Redux etc)
+
+Is my gist right ? Can I answer this and would it be acceptable by UBER/AIRBNB ?
+
+-- ANSWER --
+
+Understanding Stateful vs Stateless Widgets (Flutter)
+My Simple Understanding:
+If a value is created once and doesn’t change unless its parent widget rebuilds, then it's a StatelessWidget.
+📌 This is similar to a React component using useRef — the value persists, but changes don't trigger a re-render.
+
+If a value changes (e.g., via user input, async call, or internal logic) and the widget needs to update/react to it, then it should be a StatefulWidget.
+📌 This is similar to React components using useState, useContext, useReducer, or external state managers like Redux.
+
+Is This a Good Gist?
+✅ Yes, your gist is mostly correct — and it demonstrates conceptual mapping between Flutter and React, which can be helpful in interviews.
+
+StatelessWidget → no internal state changes that require a rebuild.
+
+StatefulWidget → internal state drives UI updates.
+
+Would This Be Acceptable for a Technical Interview at UBER / AIRBNB?
+🔍 Depends on the context:
+
+For a conceptual or high-level comparison, this is totally fine.
+
+However, if asked in a Flutter-specific interview, make sure to:
+
+Avoid oversimplifications (e.g., useRef doesn't rebuild but StatelessWidget does rebuild under certain parent triggers).
+
+Clarify that StatelessWidgets can rebuild, but don't hold mutable state themselves.
+
+Emphasize how Flutter handles widget lifecycle and why immutability in StatelessWidget helps performance.
+
+Recommended Add-on (for top-tier interviews):
+
+#### To strengthen your answer:
+
+"In Flutter, everything is a widget, but not every widget needs to manage its own state. I think of StatelessWidgets like pure functions – they take input and render output. If internal changes are needed — like handling animations, counters, or dynamic data — that’s where StatefulWidgets come in. I mentally map it to React's useState or useReducer, which control reactivity within a component."
