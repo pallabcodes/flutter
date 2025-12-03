@@ -1,0 +1,37 @@
+app:
+  name: FinWise
+  version: 1.0.0
+  environment: production
+  debug: false
+
+api:
+  base_url: https://api.finwise.com
+  timeout: 30000
+  retry_attempts: 3
+
+features:
+  ai_recommendations: true
+  premium_features: true
+  social_features: true
+  offline_mode: true
+
+analytics:
+  enabled: true
+  tracking_id: PROD_TRACKING_ID
+
+security:
+  certificate_pinning: true
+  encryption_enabled: true
+
+firebase:
+  project_id: finwise-prod
+  api_key: prod_api_key_here
+
+stripe:
+  publishable_key: pk_live_prod_key_here
+  secret_key: sk_live_prod_key_here
+
+monitoring:
+  crash_reporting: true
+  performance_monitoring: true
+  error_tracking: true

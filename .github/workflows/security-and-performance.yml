@@ -1,0 +1,394 @@
+name: Security & Performance
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run weekly security scans on Monday at 2 AM UTC
+    - cron: '0 2 * * 1'
+
+jobs:
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run security scan
+        run: dart tool/security_scan.dart all
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  performance-test:
+    name: Performance Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run performance tests
+        run: dart tool/performance_test.dart all
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: performance_results/
+          retention-days: 30
+
+  dependency-check:
+    name: Dependency Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Check for vulnerable dependencies
+        run: |
+          flutter pub deps
+          flutter pub outdated
+
+      - name: License compliance check
+        run: |
+          flutter pub licenses | grep -i "unknown\|forbidden\|not allowed" || echo "No problematic licenses found"
+
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run static analysis
+        run: flutter analyze
+
+      - name: Check formatting
+        run: dart format --set-exit-if-changed .
+
+      - name: Run tests with coverage
+        run: flutter test --coverage --test-randomize-ordering-seed=random
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: security
+          name: codecov-security
+
+  bundle-analysis:
+    name: Bundle Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Build APK for analysis
+        run: flutter build apk --debug
+
+      - name: Analyze APK size
+        run: |
+          APK_SIZE=$(stat -f%z build/app/outputs/apk/debug/app-debug.apk)
+          APK_SIZE_MB=$(echo "scale=2; $APK_SIZE / 1048576" | bc)
+          echo "APK_SIZE_MB=$APK_SIZE_MB" >> $GITHUB_ENV
+          echo "APK Size: $APK_SIZE_MB MB"
+
+      - name: Check bundle size limits
+        run: |
+          if (( $(echo "$APK_SIZE_MB > 50" | bc -l) )); then
+            echo "⚠️ APK size ($APK_SIZE_MB MB) exceeds recommended limit of 50MB"
+            exit 1
+          else
+            echo "✅ APK size ($APK_SIZE_MB MB) is within acceptable limits"
+          fi
+
+      - name: Build Web for analysis
+        run: flutter build web --release
+
+      - name: Analyze Web bundle
+        run: |
+          WEB_SIZE=$(du -sb build/web | cut -f1)
+          WEB_SIZE_MB=$(echo "scale=2; $WEB_SIZE / 1048576" | bc)
+          echo "Web bundle size: $WEB_SIZE_MB MB"
+
+          # Check for uncompressed assets
+          UNCOMPRESSED=$(find build/web -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" | head -5)
+          if [ -n "$UNCOMPRESSED" ]; then
+            echo "⚠️ Found uncompressed images that could be optimized:"
+            echo "$UNCOMPRESSED"
+          fi
+
+  license-compliance:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate license report
+        run: flutter pub licenses > licenses.txt
+
+      - name: Check for problematic licenses
+        run: |
+          if grep -i "unknown\|forbidden\|not allowed" licenses.txt; then
+            echo "❌ Found problematic licenses"
+            cat licenses.txt
+            exit 1
+          else
+            echo "✅ All licenses are compliant"
+          fi
+
+      - name: Upload license report
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-report
+          path: licenses.txt
+          retention-days: 30
+
+  accessibility-check:
+    name: Accessibility Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build debug APK
+        run: flutter build apk --debug
+
+      - name: Run accessibility checks
+        run: |
+          # Check for accessibility labels in key screens
+          if grep -r "Semantics\|semanticLabel" lib/ | wc -l | grep -q "^0"; then
+            echo "⚠️ No accessibility labels found in the codebase"
+          else
+            echo "✅ Found accessibility labels in the codebase"
+          fi
+
+          # Check for proper contrast ratios (basic check)
+          if grep -r "Colors\." lib/ | grep -E "(white|black)" | head -5 | wc -l | grep -q "^0"; then
+            echo "ℹ️ No obvious contrast issues detected"
+          else
+            echo "⚠️ Potential contrast ratio issues detected - manual review recommended"
+          fi
+
+  sonar-analysis:
+    name: SonarQube Analysis
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run tests with coverage
+        run: flutter test --coverage --test-randomize-ordering-seed=random
+
+      - name: Convert coverage to SonarQube format
+        run: |
+          # Install lcov if needed
+          sudo apt-get install -y lcov
+
+          # Generate lcov report
+          genhtml coverage/lcov.info --output-directory coverage/html
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v1
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=finwise
+            -Dsonar.sources=lib
+            -Dsonar.tests=test
+            -Dsonar.dart.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.exclusions=**/*.g.dart,**/*.freezed.dart
+
+  final-report:
+    name: Generate Security Report
+    runs-on: ubuntu-latest
+    needs: [security-scan, performance-test, dependency-check, code-quality, bundle-analysis, license-compliance, accessibility-check]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate comprehensive report
+        run: |
+          echo "# 🔒 FinWise Security & Performance Report" > security_report.md
+          echo "" >> security_report.md
+          echo "Generated on: $(date)" >> security_report.md
+          echo "" >> security_report.md
+          echo "## 📊 Test Results" >> security_report.md
+          echo "" >> security_report.md
+
+          # Check each job status
+          echo "| Check | Status |" >> security_report.md
+          echo "|-------|--------|" >> security_report.md
+
+          if [ "${{ needs.security-scan.result }}" = "success" ]; then
+            echo "| 🔒 Security Scan | ✅ Passed |" >> security_report.md
+          else
+            echo "| 🔒 Security Scan | ❌ Failed |" >> security_report.md
+          fi
+
+          if [ "${{ needs.performance-test.result }}" = "success" ]; then
+            echo "| ⚡ Performance Test | ✅ Passed |" >> security_report.md
+          else
+            echo "| ⚡ Performance Test | ❌ Failed |" >> security_report.md
+          fi
+
+          if [ "${{ needs.dependency-check.result }}" = "success" ]; then
+            echo "| 📦 Dependency Check | ✅ Passed |" >> security_report.md
+          else
+            echo "| 📦 Dependency Check | ❌ Failed |" >> security_report.md
+          fi
+
+          if [ "${{ needs.code-quality.result }}" = "success" ]; then
+            echo "| 💻 Code Quality | ✅ Passed |" >> security_report.md
+          else
+            echo "| 💻 Code Quality | ❌ Failed |" >> security_report.md
+          fi
+
+          if [ "${{ needs.bundle-analysis.result }}" = "success" ]; then
+            echo "| 📦 Bundle Analysis | ✅ Passed |" >> security_report.md
+          else
+            echo "| 📦 Bundle Analysis | ❌ Failed |" >> security_report.md
+          fi
+
+          if [ "${{ needs.license-compliance.result }}" = "success" ]; then
+            echo "| 📄 License Compliance | ✅ Passed |" >> security_report.md
+          else
+            echo "| 📄 License Compliance | ❌ Failed |" >> security_report.md
+          fi
+
+          if [ "${{ needs.accessibility-check.result }}" = "success" ]; then
+            echo "| ♿ Accessibility Check | ✅ Passed |" >> security_report.md
+          else
+            echo "| ♿ Accessibility Check | ❌ Failed |" >> security_report.md
+          fi
+
+          echo "" >> security_report.md
+          echo "## 🔍 Recommendations" >> security_report.md
+          echo "" >> security_report.md
+          echo "1. **Regular Monitoring**: Keep all security checks passing" >> security_report.md
+          echo "2. **Performance Budget**: Monitor bundle sizes and build times" >> security_report.md
+          echo "3. **Dependency Updates**: Keep dependencies updated and secure" >> security_report.md
+          echo "4. **Code Quality**: Maintain high test coverage and clean code" >> security_report.md
+          echo "" >> security_report.md
+          echo "---" >> security_report.md
+          echo "*This report was automatically generated by GitHub Actions*" >> security_report.md
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-performance-report
+          path: security_report.md
+          retention-days: 30
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('security_report.md', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });

@@ -1,0 +1,141 @@
+name: finwise
+description: AI-Powered Smart Expense Manager - Production Quality Flutter App
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.1.0 <4.0.0'
+  flutter: ">=3.13.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management & Architecture
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+  hooks_riverpod: ^2.4.9
+
+  # Data & Storage
+  drift: ^2.15.0
+  sqlite3_flutter_libs: ^0.5.20
+  path_provider: ^2.1.2
+  shared_preferences: ^2.2.2
+
+  # Networking
+  dio: ^5.4.0
+  crypto: ^3.0.3
+  pretty_dio_logger: ^1.3.1
+  connectivity_plus: ^5.0.2
+
+  # Authentication
+  firebase_core: ^2.24.2
+  firebase_auth: ^4.17.9
+  google_sign_in: ^6.2.1
+  flutter_facebook_auth: ^6.0.3
+  share_plus: ^7.2.2
+  pdf: ^3.10.7
+  csv: ^5.1.1
+  path_provider: ^2.1.3
+
+  # UI & Design
+  flutter_svg: ^2.0.9
+  cached_network_image: ^3.3.0
+  flutter_staggered_animations: ^1.1.1
+  shimmer: ^3.0.0
+  flutter_slidable: ^3.0.1
+  syncfusion_flutter_charts: ^24.2.9
+  syncfusion_flutter_datepicker: ^24.2.9
+  connectivity_plus: ^5.0.2
+
+  # Camera & Image Processing
+  camera: ^0.10.5+9
+  image_picker: ^1.0.7
+  google_ml_kit: ^0.18.0
+
+  # Utilities
+  intl: ^0.19.0
+  uuid: ^4.2.1
+  path: ^1.8.3
+  collection: ^1.18.0
+  equatable: ^2.0.5
+
+  # Security & Encryption
+  encrypt: ^5.0.1
+  flutter_secure_storage: ^9.0.0
+
+  # Permissions
+  permission_handler: ^11.3.0
+
+  # Notifications
+  flutter_local_notifications: ^16.3.3
+
+  # Analytics & Crash Reporting
+  firebase_analytics: ^10.8.10
+  firebase_crashlytics: ^3.5.8
+
+  # Code Generation
+  json_annotation: ^4.8.1
+  freezed_annotation: ^2.4.1
+  injectable: ^2.4.1
+
+  # Testing (moved to dev_dependencies in production)
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # Code Generation
+  build_runner: ^2.4.8
+  json_serializable: ^6.7.1
+  freezed: ^2.4.6
+  drift_dev: ^2.15.1
+  injectable_generator: ^2.6.1
+  riverpod_generator: ^2.3.9
+
+  # Testing
+  mockito: ^5.4.4
+  bloc_test: ^9.1.7
+  integration_test:
+    sdk: flutter
+
+  # Linting & Code Quality
+  flutter_lints: ^3.0.2
+  custom_lint: ^0.6.4
+
+  # Development Tools
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.3.10
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/animations/
+    - assets/locales/
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
+
+flutter_native_splash:
+  color: "#1A73E8"
+  image: assets/images/splash_logo.png
+  android_12:
+    image: assets/images/splash_logo_android12.png
+    color: "#1A73E8"
+
+flutter_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/app_icon.png"
+  min_sdk_android: 21

@@ -1,0 +1,120 @@
+name: Deploy iOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      destination:
+        description: 'Deployment destination'
+        required: true
+        default: 'testflight'
+        type: choice
+        options:
+          - testflight
+          - appstore
+      version:
+        description: 'Version override (optional)'
+        required: false
+        type: string
+
+jobs:
+  deploy-ios:
+    name: Deploy to App Store Connect
+    runs-on: macos-latest
+    environment:
+      name: ${{ inputs.destination == 'appstore' && 'production' || 'staging' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Setup Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
+          xcodebuild -version
+
+      - name: Setup code signing
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo '${{ secrets.IOS_PROVISIONING_PROFILE }}' | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/FinWise_Provisioning_Profile.mobileprovision
+
+          echo '${{ secrets.IOS_DISTRIBUTION_CERTIFICATE }}' | base64 --decode > certificate.p12
+          security create-keychain -p "" build.keychain
+          security import certificate.p12 -k build.keychain -P "${{ secrets.IOS_CERTIFICATE_PASSWORD }}" -T /usr/bin/codesign
+          security set-keychain-settings -lut 21600 build.keychain
+          security unlock-keychain -p "" build.keychain
+          security set-key-partition-list -S apple-tool:,apple: -k "" build.keychain
+
+      - name: Create export options
+        run: |
+          cat > ios/exportOptions.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>destination</key>
+            <string>export</string>
+            <key>method</key>
+            <string>${{ inputs.destination == 'appstore' && 'app-store' || 'development' }}</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.finwise.app</key>
+              <string>FinWise Provisioning Profile</string>
+            </dict>
+            <key>signingCertificate</key>
+            <string>iPhone Distribution</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>stripSwiftSymbols</key>
+            <true/>
+            <key>teamID</key>
+            <string>${{ secrets.IOS_TEAM_ID }}</string>
+            <key>uploadSymbols</key>
+            <true/>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Build iOS
+        run: flutter build ios --release --export-options-plist=ios/exportOptions.plist
+
+      - name: Archive and export IPA
+        run: |
+          cd ios
+          xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -archivePath build/Runner.xcarchive archive
+          xcodebuild -exportArchive -archivePath build/Runner.xcarchive -exportPath build/Runner -exportOptionsPlist exportOptions.plist
+
+      - name: Create release notes
+        run: |
+          mkdir -p distribution/ios/app-store
+          echo "${{ github.event.inputs.destination == 'appstore' && secrets.RELEASE_NOTES || 'TestFlight release - Testing new features' }}" > distribution/ios/app-store/release-notes.txt
+
+      - name: Deploy to App Store Connect
+        run: dart distribution/scripts/deploy_ios.dart ${{ inputs.destination }} ${{ inputs.version }}
+        env:
+          APP_STORE_USERNAME: ${{ secrets.APP_STORE_USERNAME }}
+          APP_STORE_PASSWORD: ${{ secrets.APP_STORE_PASSWORD }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"❌ iOS deployment failed for ${{ inputs.destination }}"}' ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  notify-success:
+    name: Notify Success
+    runs-on: ubuntu-latest
+    needs: deploy-ios
+    if: success()
+    steps:
+      - name: Notify Slack
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"✅ iOS deployment successful to ${{ inputs.destination }} - https://apps.apple.com/app/finwise/id${{ secrets.APP_STORE_APP_ID }}"}' ${{ secrets.SLACK_WEBHOOK_URL }}

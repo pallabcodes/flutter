@@ -1,0 +1,81 @@
+name: Deploy Android
+
+on:
+  workflow_dispatch:
+    inputs:
+      track:
+        description: 'Release track'
+        required: true
+        default: 'beta'
+        type: choice
+        options:
+          - alpha
+          - beta
+          - internal
+          - production
+      version:
+        description: 'Version override (optional)'
+        required: false
+        type: string
+
+jobs:
+  deploy-android:
+    name: Deploy to Google Play
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.track == 'production' && 'production' || 'staging' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build AAB
+        run: flutter build appbundle --release
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ secrets.ANDROID_KEYSTORE_PATH }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - name: Create service account key file
+        run: echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}' > android/play-store/service-account.json
+
+      - name: Create release notes
+        run: |
+          mkdir -p distribution/android/whatsnew
+          echo "${{ github.event.inputs.track == 'production' && secrets.RELEASE_NOTES || 'Beta release - Testing new features' }}" > distribution/android/whatsnew/en-US.txt
+
+      - name: Deploy to Google Play
+        run: dart distribution/scripts/deploy_android.dart ${{ inputs.track }} ${{ inputs.version }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"❌ Android deployment failed for ${{ inputs.track }} track"}' ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  notify-success:
+    name: Notify Success
+    runs-on: ubuntu-latest
+    needs: deploy-android
+    if: success()
+    steps:
+      - name: Notify Slack
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"✅ Android deployment successful to ${{ inputs.track }} track - https://play.google.com/store/apps/details?id=com.finwise.app"}' ${{ secrets.SLACK_WEBHOOK_URL }}

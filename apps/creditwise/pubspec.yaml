@@ -1,0 +1,52 @@
+name: creditwise
+description: AI-Powered Credit Optimization
+
+environment:
+  sdk: '>=3.1.0 <4.0.0'
+  flutter: ">=3.13.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Shared packages (from monorepo)
+  finwise_core:
+    path: ../../packages/core
+  finwise_ui:
+    path: ../../packages/ui
+  finwise_auth:
+    path: ../../packages/features/auth
+  finwise_analytics:
+    path: ../../packages/features/analytics
+
+  # App-specific dependencies
+  http: ^1.1.0
+  crypto: ^3.0.3
+  flutter_local_notifications: ^15.0.0
+  share_plus: ^7.0.0
+  url_launcher: ^6.1.0
+  firebase_messaging: ^14.6.0
+  flutter_secure_storage: ^8.0.0
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/locales/
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700

@@ -1,0 +1,247 @@
+# FinWise Test Configuration
+# Comprehensive testing setup for enterprise Flutter app
+
+# Test Coverage Configuration
+coverage:
+  # Minimum coverage threshold (Google standard: 80%)
+  minimum_coverage: 80.0
+
+  # Directories to include in coverage
+  include:
+    - lib/
+
+  # Directories to exclude from coverage
+  exclude:
+    - lib/core/config/injection.config.dart  # Generated file
+    - lib/**/*.g.dart                        # Generated files
+    - lib/**/*.freezed.dart                  # Generated files
+    - lib/**/*.gr.dart                       # Generated files
+    - lib/firebase_options.dart              # Generated file
+
+  # Output configuration
+  output:
+    html: true     # Generate HTML coverage report
+    lcov: true     # Generate LCOV format for CI/CD
+
+# Test Groups and Categories
+test_groups:
+  unit:
+    description: "Unit tests for business logic and utilities"
+    pattern: "test/**/*_test.dart"
+    exclude:
+      - "**/integration/**"
+      - "**/widget/**"
+      - "**/e2e/**"
+
+  widget:
+    description: "Widget tests for UI components"
+    pattern: "test/presentation/**/*_test.dart"
+    timeout: 30
+
+  integration:
+    description: "Integration tests for user flows"
+    pattern: "test/integration/**/*_test.dart"
+    timeout: 60
+
+  e2e:
+    description: "End-to-end tests for complete user journeys"
+    pattern: "test/e2e/**/*_test.dart"
+    timeout: 120
+
+# Test Environments
+environments:
+  local:
+    description: "Local development testing"
+    command: "flutter test"
+    coverage: true
+    verbose: true
+
+  ci:
+    description: "Continuous Integration testing"
+    command: "flutter test --coverage --test-randomize-ordering-seed=random"
+    coverage: true
+    verbose: false
+    fail_on_coverage_below_threshold: true
+
+  platform:
+    description: "Platform-specific testing"
+    ios: "flutter test --platform=ios"
+    android: "flutter test --platform=android"
+    web: "flutter test --platform=chrome"
+
+# Test Data and Mocks
+test_data:
+  # Sample data for consistent testing
+  sample_expenses:
+    count: 50
+    categories: [food, transportation, entertainment, shopping]
+    date_range: "2024-01-01 to 2024-12-31"
+
+  sample_budgets:
+    count: 10
+    types: [category, overall]
+    periods: [monthly, weekly, yearly]
+
+# Performance Testing
+performance:
+  # Maximum test execution time (seconds)
+  max_execution_time: 300
+
+  # Memory leak detection
+  detect_memory_leaks: true
+
+  # Frame rate testing for UI tests
+  min_frame_rate: 60
+
+# Flaky Test Handling
+flaky_tests:
+  # Maximum retry attempts for flaky tests
+  max_retries: 3
+
+  # Tests known to be flaky (will be retried)
+  known_flaky:
+    - "test/integration/receipt_scanning_test.dart"
+    - "test/e2e/camera_permission_test.dart"
+
+# Reporting and Analytics
+reporting:
+  # Test results output formats
+  formats: [json, xml, html]
+
+  # Integration with external services
+  integrations:
+    firebase_test_lab: false  # Enable for device testing
+    codemagic: true           # CI/CD integration
+    github_actions: true      # GitHub integration
+
+  # Custom test reporters
+  custom_reporters:
+    - name: "junit_reporter"
+      path: "test/reporters/junit_reporter.dart"
+
+# Code Quality Gates
+quality_gates:
+  # Static analysis
+  analyze:
+    enabled: true
+    fail_on_issues: true
+    exclude:
+      - "lib/**/*.g.dart"
+      - "lib/**/*.freezed.dart"
+
+  # Code metrics
+  metrics:
+    cyclomatic_complexity:
+      max: 10
+      exclude:
+        - "test/**"
+        - "lib/**/*.g.dart"
+
+    lines_of_code:
+      max_per_file: 500
+      exclude:
+        - "test/**"
+        - "lib/**/*.g.dart"
+
+# Device Testing Configuration
+device_testing:
+  # Physical devices for testing
+  devices:
+    ios:
+      - "iPhone 14 Pro"
+      - "iPad Pro 12.9-inch"
+    android:
+      - "Pixel 7"
+      - "Samsung Galaxy S23"
+
+  # Browser testing for web
+  browsers:
+    - chrome
+    - firefox
+    - safari
+    - edge
+
+# Test Organization
+organization:
+  # Test file naming conventions
+  naming:
+    unit: "*_test.dart"
+    widget: "*_test.dart"
+    integration: "*_test.dart"
+    e2e: "*_test.dart"
+
+  # Directory structure
+  directories:
+    unit: "test/domain/**"
+    widget: "test/presentation/**"
+    integration: "test/integration/**"
+    e2e: "test/e2e/**"
+    utils: "test/test_utils/**"
+
+# CI/CD Integration
+ci_cd:
+  # GitHub Actions workflow
+  github_actions:
+    enabled: true
+    workflow_file: ".github/workflows/test.yml"
+
+    # Test matrix
+    matrix:
+      flutter_versions: ["3.13.0", "3.16.0"]
+      platforms: ["linux", "windows", "macos"]
+
+  # Code coverage badges
+  badges:
+    codecov: true
+    codeclimate: false
+    coveralls: false
+
+  # Artifact upload
+  artifacts:
+    coverage_report: "coverage/lcov.info"
+    test_results: "test-results.xml"
+    screenshots: "test/screenshots/**"
+
+# Development Tools
+development:
+  # Test debugging
+  debugging:
+    verbose_logging: true
+    stack_traces: true
+    slow_test_detection: true
+
+  # IDE Integration
+  ide:
+    vscode:
+      extensions:
+        - "Dart-Code.flutter"
+        - "Dart-Code.dart-code"
+        - "ms-vscode.test-adapter-converter"
+
+    android_studio:
+      plugins:
+        - "Dart"
+        - "Flutter"
+
+  # Hot reload for tests (experimental)
+  hot_reload: false
+
+# Monitoring and Alerts
+monitoring:
+  # Test failure notifications
+  notifications:
+    slack: false
+    email: false
+    github_issues: true
+
+  # Performance monitoring
+  performance:
+    track_test_duration: true
+    alert_on_slow_tests: true
+    slow_test_threshold: 10  # seconds
+
+  # Coverage monitoring
+  coverage:
+    track_coverage_trends: true
+    alert_on_coverage_drop: true
+    minimum_coverage_alert: 75.0

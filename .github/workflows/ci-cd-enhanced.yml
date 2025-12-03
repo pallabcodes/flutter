@@ -1,0 +1,398 @@
+name: CI/CD Enhanced
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      app:
+        description: 'App to build (finwise, creditwise, rentwise, investwise, all)'
+        required: true
+        default: 'all'
+      environment:
+        description: 'Environment (development, staging, production)'
+        required: true
+        default: 'development'
+      deploy:
+        description: 'Deploy to stores (yes/no)'
+        required: false
+        default: 'no'
+
+jobs:
+  test:
+    name: Test & Analyze
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [finwise, creditwise, rentwise, investwise]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          cd apps/${{ matrix.app }}
+          flutter pub get
+
+      - name: Run static analysis
+        run: |
+          cd apps/${{ matrix.app }}
+          flutter analyze
+
+      - name: Run tests
+        run: |
+          cd apps/${{ matrix.app }}
+          flutter test --coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: apps/${{ matrix.app }}/coverage/lcov.info
+          flags: ${{ matrix.app }}
+          name: ${{ matrix.app }}-coverage
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  build:
+    name: Build
+    needs: [test, security-scan]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        app: [finwise, creditwise, rentwise, investwise]
+        include:
+          - os: ubuntu-latest
+            platform: android
+          - os: macos-latest
+            platform: ios
+          - os: ubuntu-latest
+            platform: web
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          cache: true
+
+      - name: Setup Java (for Android)
+        if: matrix.platform == 'android'
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Ruby (for Fastlane)
+        if: matrix.platform == 'ios' || matrix.platform == 'android'
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+
+      - name: Cache Fastlane
+        if: matrix.platform == 'ios' || matrix.platform == 'android'
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.fastlane
+            vendor/bundle
+          key: ${{ runner.os }}-fastlane-${{ hashFiles('**/Gemfile.lock') }}
+
+      - name: Install Fastlane
+        if: matrix.platform == 'ios' || matrix.platform == 'android'
+        run: |
+          gem install bundler
+          bundle install
+
+      - name: Run unified build
+        run: |
+          dart tool/build.dart \
+            -a ${{ matrix.app }} \
+            -p ${{ matrix.platform }} \
+            -e development \
+            -t \
+            -l \
+            -v
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.app }}-${{ matrix.platform }}-build
+          path: |
+            apps/${{ matrix.app }}/build/${{ matrix.platform }}/
+            apps/${{ matrix.app }}/build/app/outputs/
+          retention-days: 30
+
+  performance-test:
+    name: Performance Test
+    needs: [build]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [finwise, creditwise, rentwise, investwise]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          cache: true
+
+      - name: Run performance tests
+        run: |
+          cd apps/${{ matrix.app }}
+          flutter test integration_test/performance_test.dart
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.app }}-performance-results
+          path: apps/${{ matrix.app }}/performance_results.json
+          retention-days: 30
+
+  deploy-beta:
+    name: Deploy to Beta
+    needs: [build, performance-test]
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'yes' && github.ref == 'refs/heads/develop'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            platform: ios
+            app: finwise
+          - os: macos-latest
+            platform: ios
+            app: creditwise
+          - os: macos-latest
+            platform: ios
+            app: rentwise
+          - os: macos-latest
+            platform: ios
+            app: investwise
+          - os: ubuntu-latest
+            platform: android
+            app: finwise
+          - os: ubuntu-latest
+            platform: android
+            app: creditwise
+          - os: ubuntu-latest
+            platform: android
+            app: rentwise
+          - os: ubuntu-latest
+            platform: android
+            app: investwise
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+
+      - name: Setup Ruby (for Fastlane)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+
+      - name: Setup iOS certificates (iOS only)
+        if: matrix.platform == 'ios'
+        run: |
+          echo "${{ secrets.IOS_CERTIFICATES_P12 }}" | base64 --decode > certificates.p12
+          echo "${{ secrets.IOS_PROVISIONING_PROFILE }}" | base64 --decode > profile.mobileprovision
+
+      - name: Setup Android keystore (Android only)
+        if: matrix.platform == 'android'
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 --decode > android/keystore.jks
+          echo "${{ secrets.ANDROID_KEY_PROPERTIES }}" > android/key.properties
+
+      - name: Deploy to TestFlight (iOS)
+        if: matrix.platform == 'ios'
+        run: |
+          cd ios
+          bundle exec fastlane beta
+        env:
+          FASTLANE_APPLE_ID: ${{ secrets.APPLE_ID }}
+          FASTLANE_APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          FASTLANE_ITC_TEAM_ID: ${{ secrets.ITC_TEAM_ID }}
+
+      - name: Deploy to Google Play Beta (Android)
+        if: matrix.platform == 'android'
+        run: |
+          cd android
+          bundle exec fastlane beta
+        env:
+          GOOGLE_PLAY_JSON_KEY: ${{ secrets.GOOGLE_PLAY_JSON_KEY }}
+
+  deploy-production:
+    name: Deploy to Production
+    needs: [deploy-beta]
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'yes' && github.ref == 'refs/heads/main'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            platform: ios
+            app: finwise
+          - os: macos-latest
+            platform: ios
+            app: creditwise
+          - os: macos-latest
+            platform: ios
+            app: rentwise
+          - os: macos-latest
+            platform: ios
+            app: investwise
+          - os: ubuntu-latest
+            platform: android
+            app: finwise
+          - os: ubuntu-latest
+            platform: android
+            app: creditwise
+          - os: ubuntu-latest
+            platform: android
+            app: rentwise
+          - os: ubuntu-latest
+            platform: android
+            app: investwise
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+
+      - name: Setup Ruby (for Fastlane)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+
+      - name: Setup iOS certificates (iOS only)
+        if: matrix.platform == 'ios'
+        run: |
+          echo "${{ secrets.IOS_CERTIFICATES_P12 }}" | base64 --decode > certificates.p12
+          echo "${{ secrets.IOS_PROVISIONING_PROFILE }}" | base64 --decode > profile.mobileprovision
+
+      - name: Setup Android keystore (Android only)
+        if: matrix.platform == 'android'
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 --decode > android/keystore.jks
+          echo "${{ secrets.ANDROID_KEY_PROPERTIES }}" > android/key.properties
+
+      - name: Deploy to App Store (iOS)
+        if: matrix.platform == 'ios'
+        run: |
+          cd ios
+          bundle exec fastlane release
+        env:
+          FASTLANE_APPLE_ID: ${{ secrets.APPLE_ID }}
+          FASTLANE_APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          FASTLANE_ITC_TEAM_ID: ${{ secrets.ITC_TEAM_ID }}
+
+      - name: Deploy to Google Play (Android)
+        if: matrix.platform == 'android'
+        run: |
+          cd android
+          bundle exec fastlane release
+        env:
+          GOOGLE_PLAY_JSON_KEY: ${{ secrets.GOOGLE_PLAY_JSON_KEY }}
+
+  notify:
+    name: Notify Results
+    needs: [deploy-beta, deploy-production]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "FinWise CI/CD Pipeline Results",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚀 FinWise CI/CD Results"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Status:* ${{ job.status }}\n*Branch:* ${{ github.ref_name }}\n*Commit:* ${{ github.sha }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Test Results:* ${{ needs.test.result }}\n*Security Scan:* ${{ needs.security-scan.result }}\n*Build:* ${{ needs.build.result }}\n*Performance:* ${{ needs.performance-test.result }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  monitoring:
+    name: Update Monitoring Dashboard
+    needs: [test, build, performance-test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update monitoring dashboard
+        run: |
+          dart tool/monitoring_dashboard.dart update \
+            --status="${{ job.status }}" \
+            --test-results="${{ needs.test.result }}" \
+            --build-results="${{ needs.build.result }}" \
+            --performance-results="${{ needs.performance-test.result }}"
+
+      - name: Commit dashboard updates
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: 'monitoring-dashboard.md'
+          message: 'Update monitoring dashboard [CI]'
+          author_name: 'GitHub Actions'
+          author_email: 'actions@github.com'

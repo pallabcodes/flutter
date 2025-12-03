@@ -1,0 +1,108 @@
+name: Deploy Web
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      version:
+        description: 'Version override (optional)'
+        required: false
+        type: string
+
+jobs:
+  deploy-web:
+    name: Deploy to Web Hosting
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Configure environment
+        run: |
+          if [ "${{ inputs.environment }}" = "production" ]; then
+            echo "WEB_BUCKET_NAME=${{ secrets.PROD_WEB_BUCKET_NAME }}" >> $GITHUB_ENV
+            echo "CLOUDFRONT_DISTRIBUTION_ID=${{ secrets.PROD_CLOUDFRONT_DISTRIBUTION_ID }}" >> $GITHUB_ENV
+            echo "WEB_URL=https://finwise.app" >> $GITHUB_ENV
+          else
+            echo "WEB_BUCKET_NAME=${{ secrets.STAGING_WEB_BUCKET_NAME }}" >> $GITHUB_ENV
+            echo "CLOUDFRONT_DISTRIBUTION_ID=${{ secrets.STAGING_CLOUDFRONT_DISTRIBUTION_ID }}" >> $GITHUB_ENV
+            echo "WEB_URL=https://staging.finwise.app" >> $GITHUB_ENV
+          fi
+
+      - name: Build Web
+        run: flutter build web --release --web-renderer canvaskit
+        env:
+          FLUTTER_WEB_CANVASKIT_URL: /assets/canvaskit/
+
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Create deploy config
+        run: |
+          mkdir -p distribution/web
+          cat > distribution/web/deploy-config.json << EOF
+          {
+            "bucket": "$WEB_BUCKET_NAME",
+            "region": "${{ secrets.AWS_REGION }}",
+            "cloudfront_distribution_id": "$CLOUDFRONT_DISTRIBUTION_ID",
+            "cache_control": {
+              "static": "max-age=31536000,public,immutable",
+              "html": "max-age=300",
+              "assets": "max-age=31536000,public"
+            }
+          }
+          EOF
+
+      - name: Deploy to S3
+        run: dart distribution/scripts/deploy_web.dart ${{ inputs.environment }} ${{ inputs.version }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          WEB_BUCKET_NAME: $WEB_BUCKET_NAME
+          CLOUDFRONT_DISTRIBUTION_ID: $CLOUDFRONT_DISTRIBUTION_ID
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Health Check
+        run: |
+          echo "Waiting for deployment to propagate..."
+          sleep 30
+          curl -f $WEB_URL || (echo "Health check failed" && exit 1)
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"❌ Web deployment failed for ${{ inputs.environment }}"}' ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  notify-success:
+    name: Notify Success
+    runs-on: ubuntu-latest
+    needs: deploy-web
+    if: success()
+    steps:
+      - name: Notify Slack
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"✅ Web deployment successful to ${{ inputs.environment }} - $WEB_URL"}' ${{ secrets.SLACK_WEBHOOK_URL }}

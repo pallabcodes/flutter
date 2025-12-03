@@ -1,0 +1,43 @@
+features:
+  # Core Features
+  expense_tracking: true
+  budget_management: true
+  credit_monitoring: true
+  rental_management: true
+  micro_investing: true
+
+  # Advanced Features
+  ai_recommendations: true
+  premium_features: true
+  social_features: true
+  offline_mode: true
+
+  # Experimental Features
+  voice_commands: true
+  biometric_auth: true
+  advanced_analytics: false
+  cross_app_sync: true
+
+  # Beta Features
+  smart_goals: true
+  automated_savings: true
+  investment_advice: false
+  financial_planning: false
+
+  # Platform Features
+  ios_features: true
+  android_features: true
+  web_features: true
+  wear_os_features: false
+
+  # Integration Features
+  stripe_payments: true
+  plaid_bank_sync: true
+  credit_bureau_api: true
+  investment_broker_api: true
+
+  # Monitoring & Analytics
+  crash_reporting: true
+  performance_monitoring: true
+  user_analytics: true
+  error_tracking: true

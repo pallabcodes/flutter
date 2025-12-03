@@ -1,0 +1,37 @@
+app:
+  name: FinWise
+  version: 1.0.0-staging
+  environment: staging
+  debug: false
+
+api:
+  base_url: https://api-staging.finwise.com
+  timeout: 30000
+  retry_attempts: 3
+
+features:
+  ai_recommendations: true
+  premium_features: true
+  social_features: true
+  offline_mode: true
+
+analytics:
+  enabled: true
+  tracking_id: STAGING_TRACKING_ID
+
+security:
+  certificate_pinning: true
+  encryption_enabled: true
+
+firebase:
+  project_id: finwise-staging
+  api_key: staging_api_key_here
+
+stripe:
+  publishable_key: pk_test_staging_key_here
+  secret_key: sk_test_staging_key_here
+
+monitoring:
+  crash_reporting: true
+  performance_monitoring: true
+  error_tracking: true

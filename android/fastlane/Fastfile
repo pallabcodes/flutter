@@ -1,0 +1,269 @@
+# Android Fastlane Configuration for FinWise
+# This file contains automated deployment lanes for Google Play Store
+
+import("Fastfile")
+
+default_platform(:android)
+
+platform :android do
+  desc "Load Google Play API credentials"
+  lane :load_play_credentials do
+    # Google Play Store credentials are handled via service account JSON
+    # Set in environment variables or CI/CD secrets
+  end
+
+  desc "Build and deploy to Google Play Internal Testing"
+  lane :internal do
+    load_play_credentials
+
+    # Build AAB
+    gradle(
+      task: "bundle",
+      flavor: "staging",
+      build_type: "Release",
+      properties: {
+        "android.injected.signing.store.file" => ENV["ANDROID_KEYSTORE_PATH"],
+        "android.injected.signing.store.password" => ENV["ANDROID_KEYSTORE_PASSWORD"],
+        "android.injected.signing.key.alias" => ENV["ANDROID_KEY_ALIAS"],
+        "android.injected.signing.key.password" => ENV["ANDROID_KEY_PASSWORD"]
+      }
+    )
+
+    # Upload to Internal Testing
+    upload_to_play_store(
+      track: "internal",
+      aab: "build/app/outputs/bundle/stagingRelease/app-staging-release.aab",
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: false,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: "draft"
+    )
+  end
+
+  desc "Build and deploy to Google Play Alpha"
+  lane :alpha do
+    load_play_credentials
+
+    # Build AAB
+    gradle(
+      task: "bundle",
+      flavor: "staging",
+      build_type: "Release",
+      properties: {
+        "android.injected.signing.store.file" => ENV["ANDROID_KEYSTORE_PATH"],
+        "android.injected.signing.store.password" => ENV["ANDROID_KEYSTORE_PASSWORD"],
+        "android.injected.signing.key.alias" => ENV["ANDROID_KEY_ALIAS"],
+        "android.injected.signing.key.password" => ENV["ANDROID_KEY_PASSWORD"]
+      }
+    )
+
+    # Upload to Alpha
+    upload_to_play_store(
+      track: "alpha",
+      aab: "build/app/outputs/bundle/stagingRelease/app-staging-release.aab",
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: false,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: "draft"
+    )
+  end
+
+  desc "Build and deploy to Google Play Beta"
+  lane :beta do
+    load_play_credentials
+
+    # Build AAB
+    gradle(
+      task: "bundle",
+      flavor: "staging",
+      build_type: "Release",
+      properties: {
+        "android.injected.signing.store.file" => ENV["ANDROID_KEYSTORE_PATH"],
+        "android.injected.signing.store.password" => ENV["ANDROID_KEYSTORE_PASSWORD"],
+        "android.injected.signing.key.alias" => ENV["ANDROID_KEY_ALIAS"],
+        "android.injected.signing.key.password" => ENV["ANDROID_KEY_PASSWORD"]
+      }
+    )
+
+    # Upload to Beta
+    upload_to_play_store(
+      track: "beta",
+      aab: "build/app/outputs/bundle/stagingRelease/app-staging-release.aab",
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: false,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: "draft"
+    )
+  end
+
+  desc "Build and deploy to Google Play Production"
+  lane :production do
+    load_play_credentials
+
+    # Build AAB
+    gradle(
+      task: "bundle",
+      flavor: "production",
+      build_type: "Release",
+      properties: {
+        "android.injected.signing.store.file" => ENV["ANDROID_KEYSTORE_PATH"],
+        "android.injected.signing.store.password" => ENV["ANDROID_KEYSTORE_PASSWORD"],
+        "android.injected.signing.key.alias" => ENV["ANDROID_KEY_ALIAS"],
+        "android.injected.signing.key.password" => ENV["ANDROID_KEY_PASSWORD"]
+      }
+    )
+
+    # Upload to Production
+    upload_to_play_store(
+      track: "production",
+      aab: "build/app/outputs/bundle/productionRelease/app-production-release.aab",
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: false,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: "draft",
+      rollout: "0.1" # Gradual rollout for safety
+    )
+
+    # Create git tag
+    version = android_get_version_name
+    code = android_get_version_code
+    add_git_tag(
+      tag: "android/v#{version}+#{code}",
+      message: "Android Release v#{version}+#{code}"
+    )
+
+    push_git_tags
+  end
+
+  desc "Promote from Beta to Production"
+  lane :promote_to_production do
+    load_play_credentials
+
+    # Promote latest beta build to production
+    upload_to_play_store(
+      track: "production",
+      track_promote_to: "beta",
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: "completed",
+      rollout: "0.5" # 50% rollout initially
+    )
+  end
+
+  desc "Update Play Store metadata"
+  lane :metadata do
+    load_play_credentials
+
+    upload_to_play_store(
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_changelogs: true,
+      skip_upload_screenshots: false,
+      skip_upload_images: false,
+      metadata_path: "fastlane/metadata/android"
+    )
+  end
+
+  desc "Take screenshots for Google Play"
+  lane :screenshots do
+    # Build APK for screenshot testing
+    gradle(
+      task: "assemble",
+      flavor: "staging",
+      build_type: "Debug"
+    )
+
+    # Run screenshot tests
+    screengrab(
+      app_apk_path: "build/app/outputs/apk/staging/debug/app-staging-debug.apk",
+      tests_apk_path: "build/app/outputs/apk/androidTest/staging/debug/app-staging-debug-androidTest.apk",
+      locales: ["en-US", "es-ES", "fr-FR", "de-DE"],
+      clear_previous_screenshots: true,
+      app_package_name: "com.finwise.app",
+      output_directory: "fastlane/screenshots"
+    )
+  end
+
+  desc "Run Android tests"
+  lane :test do
+    gradle(
+      task: "test",
+      flavor: "staging",
+      build_type: "Debug"
+    )
+
+    # Generate test reports
+    gradle(
+      task: "jacocoTestReport",
+      flavor: "staging",
+      build_type: "Debug"
+    )
+  end
+
+  desc "Check Google Play Store status"
+  lane :status do
+    load_play_credentials
+
+    # Get track information
+    tracks = google_play_track_information(
+      track: "production"
+    )
+
+    UI.message "Production track status: #{tracks[:status]}"
+    UI.message "Production version: #{tracks[:version_codes]}"
+
+    tracks = google_play_track_information(
+      track: "beta"
+    )
+
+    UI.message "Beta track status: #{tracks[:status]}"
+    UI.message "Beta version: #{tracks[:version_codes]}"
+  end
+
+  desc "Emergency rollback to previous version"
+  lane :rollback do
+    load_play_credentials
+
+    # Get previous version code
+    previous_version = ENV["ROLLBACK_VERSION_CODE"]
+    if previous_version.nil?
+      UI.error "Please set ROLLBACK_VERSION_CODE environment variable"
+      next
+    end
+
+    # Upload previous AAB to production (requires manual build of previous version)
+    upload_to_play_store(
+      track: "production",
+      aab: ENV["ROLLBACK_AAB_PATH"],
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: false,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: "completed",
+      rollout: "1.0" # Full rollout for emergency
+    )
+  end
+
+  desc "Clean up build artifacts"
+  lane :clean do
+    gradle(
+      task: "clean"
+    )
+
+    # Clean Fastlane artifacts
+    clean_build_artifacts
+  end
+end
