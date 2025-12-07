@@ -1,0 +1,53 @@
+# Flutter tooling
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+coverage/
+build/
+
+# Generated code
+**/GeneratedPluginRegistrant.*
+**/generated_plugin_registrant.dart
+
+# Android artifacts
+android/.gradle/
+android/app/build/
+android/local.properties
+android/key.properties
+android/**/build/
+android/**/captures/
+*.jks
+*.keystore
+
+# iOS artifacts
+ios/Pods/
+ios/.generated/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/Runner/GeneratedPluginRegistrant.*
+ios/build/
+DerivedData/
+xcuserdata/
+
+# Fastlane outputs
+**/fastlane/report.xml
+**/fastlane/Preview.html
+**/fastlane/screenshots
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# System files
+.DS_Store
+*.log
+
+.fvm

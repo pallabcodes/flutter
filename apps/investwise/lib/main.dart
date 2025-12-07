@@ -1,30 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:finwise_core/finwise_core.dart';
-import 'package:finwise_ui/finwise_ui.dart';
-import 'package:finwise_core/animations/meaningful_interactions.dart';
 import 'package:investwise/presentation/screens/portfolio/portfolio_dashboard_screen.dart';
+
+final ThemeData _lightTheme = ThemeData(
+  colorSchemeSeed: Colors.green,
+  brightness: Brightness.light,
+  useMaterial3: true,
+);
+
+final ThemeData _darkTheme = ThemeData(
+  colorSchemeSeed: Colors.green,
+  brightness: Brightness.dark,
+  useMaterial3: true,
+);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize shared services
-  await FinWiseCore.initialize();
-
-  // Initialize Firebase Messaging for notifications
-  await FirebaseMessaging.instance.requestPermission();
-  await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
-
-  runApp(
-    const ProviderScope(
-      child: InvestWiseApp(),
-    ),
-  );
+  runApp(const InvestWiseApp());
 }
 
 class InvestWiseApp extends StatelessWidget {
@@ -34,8 +25,8 @@ class InvestWiseApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'InvestWise',
-      theme: FinWiseTheme.lightTheme,
-      darkTheme: FinWiseTheme.darkTheme,
+      theme: _lightTheme,
+      darkTheme: _darkTheme,
       themeMode: ThemeMode.system,
       home: const InvestWiseHomePage(),
       routes: {

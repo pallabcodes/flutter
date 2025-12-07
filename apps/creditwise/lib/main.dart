@@ -1,31 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:finwise_core/finwise_core.dart';
-import 'package:finwise_ui/finwise_ui.dart';
-import 'package:finwise_core/animations/meaningful_interactions.dart';
-import 'package:creditwise/presentation/screens/dashboard/credit_dashboard_screen.dart';
-import 'package:creditwise/presentation/screens/recommendations/recommendations_screen.dart';
+
+final ThemeData _lightTheme = ThemeData(
+  colorSchemeSeed: Colors.blue,
+  brightness: Brightness.light,
+  useMaterial3: true,
+);
+
+final ThemeData _darkTheme = ThemeData(
+  colorSchemeSeed: Colors.blue,
+  brightness: Brightness.dark,
+  useMaterial3: true,
+);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize shared services
-  await FinWiseCore.initialize();
-
-  // Initialize Firebase Messaging for notifications
-  await FirebaseMessaging.instance.requestPermission();
-  await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
-
-  runApp(
-    const ProviderScope(
-      child: CreditWiseApp(),
-    ),
-  );
+  runApp(const CreditWiseApp());
 }
 
 class CreditWiseApp extends StatelessWidget {
@@ -35,17 +25,10 @@ class CreditWiseApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'CreditWise',
-      theme: FinWiseTheme.lightTheme,
-      darkTheme: FinWiseTheme.darkTheme,
+      theme: _lightTheme,
+      darkTheme: _darkTheme,
       themeMode: ThemeMode.system,
       home: const CreditWiseHomePage(),
-      routes: {
-        '/dashboard': (context) => const CreditDashboardScreen(),
-        '/report': (context) => const CreditReportScreen(),
-        '/recommendations': (context) => const RecommendationsScreen(),
-        '/education': (context) => const EducationScreen(),
-        '/settings': (context) => const SettingsScreen(),
-      },
     );
   }
 }
@@ -72,88 +55,57 @@ class _CreditWiseHomePageState extends State<CreditWiseHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.credit_score,
-              size: 64,
-              color: Colors.blue,
-            ),
-            SizedBox(height: 24),
-            Text(
-              'CreditWise',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Spacer(),
+              const Icon(
+                Icons.credit_score,
+                size: 72,
+                color: Colors.blue,
               ),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'AI-Powered Credit Optimization',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
+              const SizedBox(height: 24),
+              const Text(
+                'CreditWise',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            SizedBox(height: 48),
-            CircularProgressIndicator(),
-            SizedBox(height: 24),
-            Text('Loading your credit insights...'),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                'AI-powered credit insights coming soon.',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 32),
+              FilledButton(
+                onPressed: () {},
+                child: const Text('Continue'),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: () {},
+                child: const Text('View dashboard (placeholder)'),
+              ),
+              const SizedBox(height: 48),
+              Text(
+                'This build uses placeholder screens until shared packages land.',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                ),
+              ),
+              const Spacer(),
+            ],
+          ),
         ),
       ),
-    );
-  }
-}
-
-// Placeholder screens - will be implemented
-class CreditReportScreen extends StatelessWidget {
-  const CreditReportScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Credit Report')),
-      body: const Center(child: Text('Credit Report Screen - Coming Soon')),
-    );
-  }
-}
-
-class RecommendationsScreen extends StatelessWidget {
-  const RecommendationsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Recommendations')),
-      body: const Center(child: Text('AI Recommendations - Coming Soon')),
-    );
-  }
-}
-
-class EducationScreen extends StatelessWidget {
-  const EducationScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Education')),
-      body: const Center(child: Text('Credit Education - Coming Soon')),
-    );
-  }
-}
-
-class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: const Center(child: Text('Settings Screen - Coming Soon')),
     );
   }
 }

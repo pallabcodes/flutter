@@ -19,7 +19,6 @@ dependencies:
   # Data & Storage
   drift: ^2.15.0
   sqlite3_flutter_libs: ^0.5.20
-  path_provider: ^2.1.2
   shared_preferences: ^2.2.2
 
   # Networking
@@ -46,7 +45,6 @@ dependencies:
   flutter_slidable: ^3.0.1
   syncfusion_flutter_charts: ^24.2.9
   syncfusion_flutter_datepicker: ^24.2.9
-  connectivity_plus: ^5.0.2
 
   # Camera & Image Processing
   camera: ^0.10.5+9
