@@ -1,4 +1,6 @@
+import 'package:dartz/dartz.dart';
 import 'package:finwise/core/errors/failure.dart';
+import 'package:finwise/core/sync/sync_models.dart';
 import 'package:finwise/domain/entities/expense.dart';
 import 'package:finwise/domain/entities/budget.dart';
 

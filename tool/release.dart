@@ -313,7 +313,11 @@ class ReleaseManager {
 
   static Future<List<Map<String, String>>> _getCommitsSinceLastRelease() async {
     try {
-      final result = await _runCommand(['git', 'log', '--oneline', '--pretty=format:%H|%s', 'HEAD...$(git describe --tags --abbrev=0)']);
+      // First get the last tag
+      final lastTag = await _runCommand(['git', 'describe', '--tags', '--abbrev=0']);
+      final tag = lastTag.trim();
+      // Then get commits since that tag
+      final result = await _runCommand(['git', 'log', '--oneline', '--pretty=format:%H|%s', 'HEAD...$tag']);
       return result.split('\n').where((line) => line.isNotEmpty).map((line) {
         final parts = line.split('|');
         return {

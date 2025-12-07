@@ -1,5 +1,6 @@
 import 'package:finwise/core/config/injection.dart';
 import 'package:finwise/domain/repositories/auth_repository.dart';
+import 'package:finwise/domain/usecases/create_expense_usecase.dart';
 import 'package:finwise/domain/usecases/sign_in_usecase.dart';
 import 'package:finwise/presentation/providers/expense_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

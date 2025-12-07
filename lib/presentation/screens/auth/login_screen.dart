@@ -1,3 +1,5 @@
+import 'package:finwise/core/navigation/app_router.dart';
+import 'package:finwise/domain/repositories/auth_repository.dart';
 import 'package:finwise/presentation/providers/auth_providers.dart';
 import 'package:finwise/presentation/theme/app_theme.dart';
 import 'package:finwise/presentation/widgets/auth_text_field.dart';
@@ -77,7 +79,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   labelText: 'Email',
                   hintText: 'Enter your email',
                   keyboardType: TextInputType.emailAddress,
-                  prefixIcon: Icons.email,
+                  prefixIcon: const Icon(Icons.email),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email';
@@ -97,7 +99,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   labelText: 'Password',
                   hintText: 'Enter your password',
                   obscureText: !_isPasswordVisible,
-                  prefixIcon: Icons.lock,
+                  prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
@@ -290,10 +292,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _signInAnonymously() async {
-    // For demo purposes, navigate directly to home
-    // In a real app, you'd implement anonymous auth
-    if (mounted) {
-      AppRouter.goToHome();
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await ref.read(authRepositoryProvider).signInAnonymously();
+      result.fold(
+        (failure) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(failure.message)),
+            );
+          }
+        },
+        (_) {
+          if (mounted) {
+            AppRouter.goToHome();
+          }
+        },
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

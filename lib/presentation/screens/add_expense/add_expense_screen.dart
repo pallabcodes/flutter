@@ -1,6 +1,8 @@
+import 'package:finwise/core/navigation/app_router.dart';
 import 'package:finwise/domain/entities/expense.dart';
 import 'package:finwise/domain/repositories/receipt_scanner_repository.dart';
 import 'package:finwise/domain/usecases/create_expense_usecase.dart';
+import 'package:finwise/presentation/providers/auth_providers.dart';
 import 'package:finwise/presentation/providers/expense_providers.dart';
 import 'package:finwise/presentation/providers/receipt_scanner_providers.dart';
 import 'package:finwise/presentation/screens/receipt_scanner/camera_screen.dart';
@@ -343,8 +345,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       if (!granted) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Camera permission is required to scan receipts'),
+            SnackBar(
+              content: const Text('Camera permission is required to scan receipts'),
               action: SnackBarAction(
                 label: 'Settings',
                 onPressed: () {

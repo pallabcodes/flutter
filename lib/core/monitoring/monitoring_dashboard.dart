@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:finwise/core/monitoring/analytics_service.dart';
 import 'package:finwise/core/monitoring/performance_monitor.dart';
 import 'package:finwise/core/monitoring/health_monitor.dart';
@@ -194,7 +195,7 @@ class _MonitoringDashboardState extends State<MonitoringDashboard>
             title: ChartTitle(text: 'Performance Metrics Over Time'),
             legend: Legend(isVisible: true),
             tooltipBehavior: TooltipBehavior(enable: true),
-            series: <ChartSeries>[
+            series: <CartesianSeries>[
               LineSeries<PerformanceMetric, DateTime>(
                 name: 'App Startup (ms)',
                 dataSource: metrics.where((m) => m.name == 'app_startup').toList(),
@@ -307,7 +308,7 @@ class _MonitoringDashboardState extends State<MonitoringDashboard>
                 ),
                 const SizedBox(height: 8),
                 SfCartesianChart(
-                  series: <ChartSeries>[
+                  series: <CartesianSeries>[
                     BarSeries<String, String>(
                       dataSource: summary.topEvents,
                       xValueMapper: (event, _) => event,
@@ -739,7 +740,7 @@ class Alert {
   final DateTime timestamp;
   final Map<String, dynamic> metadata;
 
-  const Alert({
+  Alert({
     required this.title,
     required this.message,
     required this.severity,

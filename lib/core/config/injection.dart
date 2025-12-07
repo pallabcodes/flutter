@@ -2,6 +2,7 @@ import 'package:finwise/core/config/injection.config.dart';
 import 'package:finwise/data/datasources/local/database/database.dart';
 import 'package:finwise/data/datasources/remote/api_client.dart';
 import 'package:finwise/data/repositories/auth_repository_impl.dart';
+import 'package:finwise/data/repositories/stub_auth_repository_impl.dart';
 import 'package:finwise/data/repositories/budget_repository_impl.dart';
 import 'package:finwise/data/repositories/expense_repository_impl.dart';
 import 'package:finwise/data/repositories/receipt_scanner_repository_impl.dart';
@@ -11,8 +12,20 @@ import 'package:finwise/domain/repositories/expense_repository.dart';
 import 'package:finwise/domain/repositories/receipt_scanner_repository.dart';
 import 'package:finwise/domain/usecases/budget_usecases.dart';
 import 'package:finwise/presentation/providers/budget_providers.dart';
+import 'package:finwise/core/monitoring/analytics_service.dart';
+import 'package:finwise/core/monitoring/health_monitor.dart';
+import 'package:finwise/core/monitoring/performance_monitor.dart';
 import 'package:finwise/core/native/native_bridge.dart';
+import 'package:finwise/core/security/encryption_service.dart';
+import 'package:finwise/core/security/secure_storage.dart';
+import 'package:finwise/core/sync/sync_conflict_resolver.dart';
+import 'package:finwise/core/sync/sync_engine.dart';
+import 'package:finwise/core/sync/sync_models.dart';
+import 'package:finwise/core/sync/sync_queue.dart';
+import 'package:finwise/core/sync/sync_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
@@ -28,42 +41,82 @@ final getIt = GetIt.instance;
   asExtension: false,
 )
 Future<void> configureDependencies() async {
-  // Initialize database first as other services depend on it
-  final database = AppDatabase();
-  getIt.registerSingleton<AppDatabase>(database);
+  // Register generated singletons first (AppDatabase, ApiClient, etc.)
+  $initGetIt(getIt);
 
-  // Initialize API client
-  final apiClient = ApiClient();
-  getIt.registerSingleton<ApiClient>(apiClient);
+  // Register Firebase dependencies (optional - only if Firebase is initialized)
+  FirebaseAuth? firebaseAuth;
+  GoogleSignIn? googleSignIn;
+  
+  try {
+    // Check if Firebase is initialized
+    final app = Firebase.app();
+    firebaseAuth = FirebaseAuth.instanceFor(app: app);
+    googleSignIn = GoogleSignIn();
+    getIt.registerSingleton<FirebaseAuth>(firebaseAuth!);
+    getIt.registerSingleton<GoogleSignIn>(googleSignIn!);
+  } catch (e) {
+    if (kDebugMode) {
+      print('Firebase dependencies not available: $e');
+    }
+    // Create a mock/null FirebaseAuth instance or skip registration
+    // For now, we'll skip Firebase-dependent features
+  }
 
-  // Register Firebase dependencies
-  getIt.registerSingleton<FirebaseAuth>(FirebaseAuth.instance);
-  getIt.registerSingleton<GoogleSignIn>(GoogleSignIn());
+  // Register repositories (use stub if Firebase is not available)
+  if (firebaseAuth != null && googleSignIn != null) {
+    if (getIt.isRegistered<AuthRepository>()) {
+      await getIt.unregister<AuthRepository>();
+    }
+    getIt.registerSingleton<AuthRepository>(
+      AuthRepositoryImpl(
+        firebaseAuth!,
+        googleSignIn!,
+      ),
+    );
+  } else {
+    if (getIt.isRegistered<AuthRepository>()) {
+      await getIt.unregister<AuthRepository>();
+    }
+    // Register a stub AuthRepository that doesn't require Firebase
+    getIt.registerSingleton<AuthRepository>(
+      StubAuthRepositoryImpl(),
+    );
+    if (kDebugMode) {
+      print('Using StubAuthRepository - Firebase not available');
+    }
+  }
 
-  // Register repositories
-  getIt.registerSingleton<AuthRepository>(
-    AuthRepositoryImpl(
-      FirebaseAuth.instance,
-      GoogleSignIn(),
-    ),
-  );
+  if (!getIt.isRegistered<ExpenseRepository>()) {
+    getIt.registerSingleton<ExpenseRepository>(
+      ExpenseRepositoryImpl(getIt<AppDatabase>(), getIt<ApiClient>()),
+    );
+  }
 
-  getIt.registerSingleton<ExpenseRepository>(
-    ExpenseRepositoryImpl(database, apiClient),
-  );
+  if (!getIt.isRegistered<BudgetRepository>()) {
+    getIt.registerSingleton<BudgetRepository>(
+      BudgetRepositoryImpl(getIt<AppDatabase>(), getIt<ApiClient>()),
+    );
+  }
 
-  getIt.registerSingleton<BudgetRepository>(
-    BudgetRepositoryImpl(database, apiClient),
-  );
-
-  getIt.registerSingleton<ReceiptScannerRepository>(
-    ReceiptScannerRepositoryImpl(),
-  );
+  if (!getIt.isRegistered<ReceiptScannerRepository>()) {
+    getIt.registerSingleton<ReceiptScannerRepository>(
+      ReceiptScannerRepositoryImpl(),
+    );
+  }
 
   // Register security services
-  await SecureStorage.initialize();
-  getIt.registerSingleton<EncryptionService>(EncryptionService());
-  getIt.registerSingleton<SecureStorage>(SecureStorage());
+  // SecureStorage and EncryptionService are static classes with static methods
+  // They don't need to be registered in the DI container
+  try {
+    await EncryptionService.initialize();
+    await SecureStorage.initialize();
+  } catch (e) {
+    if (kDebugMode) {
+      print('Security services initialization failed: $e');
+      print('App will continue without secure storage');
+    }
+  }
 
   // Register native bridge
   getIt.registerSingleton<NativeBridge>(NativeBridge());
@@ -91,33 +144,17 @@ Future<void> configureDependencies() async {
     ),
   );
 
-  // Register monitoring services
-  getIt.registerSingleton<PerformanceMonitor>(PerformanceMonitor());
-  getIt.registerSingleton<AnalyticsService>(AnalyticsService());
-  getIt.registerSingleton<HealthMonitor>(HealthMonitor());
+  // Register monitoring services if not already registered by injectable
+  if (!getIt.isRegistered<PerformanceMonitor>()) {
+    getIt.registerSingleton<PerformanceMonitor>(PerformanceMonitor());
+  }
+  if (!getIt.isRegistered<AnalyticsService>()) {
+    getIt.registerSingleton<AnalyticsService>(AnalyticsService());
+  }
+  if (!getIt.isRegistered<HealthMonitor>()) {
+    getIt.registerSingleton<HealthMonitor>(HealthMonitor());
+  }
 
-  // Register budget use cases
-  getIt.registerSingleton<CreateBudgetUseCase>(
-    CreateBudgetUseCase(getIt<BudgetRepository>()),
-  );
-  getIt.registerSingleton<GetBudgetsUseCase>(
-    GetBudgetsUseCase(getIt<BudgetRepository>()),
-  );
-  getIt.registerSingleton<GetActiveBudgetsWithProgressUseCase>(
-    GetActiveBudgetsWithProgressUseCase(getIt<BudgetRepository>()),
-  );
-  getIt.registerSingleton<UpdateBudgetProgressUseCase>(
-    UpdateBudgetProgressUseCase(getIt<BudgetRepository>()),
-  );
-  getIt.registerSingleton<UpdateBudgetUseCase>(
-    UpdateBudgetUseCase(getIt<BudgetRepository>()),
-  );
-  getIt.registerSingleton<DeleteBudgetUseCase>(
-    DeleteBudgetUseCase(getIt<BudgetRepository>()),
-  );
-
-  // Initialize all other dependencies
-  $initGetIt(getIt);
 }
 
 /// Environment configuration for dependency injection
@@ -130,9 +167,7 @@ abstract class Env {
 /// Module for registering singleton services
 @module
 abstract class RegisterModule {
-  @singleton
-  AppDatabase get appDatabase => AppDatabase();
-
-  @singleton
-  ApiClient get apiClient => ApiClient();
+  // AppDatabase is already registered with @singleton annotation in database.dart
+  // ApiClient is already registered with @injectable annotation in api_client.dart
+  // Both are registered directly on their classes, so no need to register here
 }

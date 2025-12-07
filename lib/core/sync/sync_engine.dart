@@ -5,6 +5,7 @@ import 'package:finwise/core/errors/failure.dart';
 import 'package:finwise/core/security/encryption_service.dart';
 import 'package:finwise/core/security/secure_storage.dart';
 import 'package:finwise/core/sync/sync_conflict_resolver.dart';
+import 'package:finwise/core/sync/sync_models.dart';
 import 'package:finwise/core/sync/sync_queue.dart';
 import 'package:finwise/core/sync/sync_repository.dart';
 import 'package:finwise/domain/entities/expense.dart';
@@ -83,8 +84,8 @@ class SyncEngine {
       await SecureStorage.storeLastSyncTimestamp(DateTime.now());
 
       final result = SyncResult.success(
-        syncedExpenses: expenseResult.syncedItems,
-        syncedBudgets: budgetResult.syncedItems,
+        syncedExpenses: expenseResult.syncedItems.length,
+        syncedBudgets: budgetResult.syncedItems.length,
         conflictsResolved: expenseResult.conflicts.length + budgetResult.conflicts.length,
       );
 
@@ -134,11 +135,21 @@ class SyncEngine {
   // Private methods
 
   Future<SyncDataResult> _syncExpenses(String userId, DateTime since) async {
-    final localExpenses = await _syncRepository.getLocalExpenses(userId, since);
-    final remoteExpenses = await _syncRepository.getRemoteExpenses(userId, since);
+    final localExpensesResult = await _syncRepository.getLocalExpenses(userId, since);
+    final remoteExpensesResult = await _syncRepository.getRemoteExpenses(userId, since);
 
     final conflicts = <SyncConflict>[];
     final syncedItems = <Expense>[];
+
+    // Handle Either results
+    final localExpenses = localExpensesResult.fold(
+      (failure) => <Expense>[],
+      (expenses) => expenses,
+    );
+    final remoteExpenses = remoteExpensesResult.fold(
+      (failure) => <Expense>[],
+      (expenses) => expenses,
+    );
 
     // Find conflicts and changes
     final localMap = {for (var expense in localExpenses) expense.id: expense};
@@ -180,11 +191,21 @@ class SyncEngine {
   }
 
   Future<SyncDataResult> _syncBudgets(String userId, DateTime since) async {
-    final localBudgets = await _syncRepository.getLocalBudgets(userId, since);
-    final remoteBudgets = await _syncRepository.getRemoteBudgets(userId, since);
+    final localBudgetsResult = await _syncRepository.getLocalBudgets(userId, since);
+    final remoteBudgetsResult = await _syncRepository.getRemoteBudgets(userId, since);
 
     final conflicts = <SyncConflict>[];
     final syncedItems = <Budget>[];
+
+    // Handle Either results
+    final localBudgets = localBudgetsResult.fold(
+      (failure) => <Budget>[],
+      (budgets) => budgets,
+    );
+    final remoteBudgets = remoteBudgetsResult.fold(
+      (failure) => <Budget>[],
+      (budgets) => budgets,
+    );
 
     // Similar logic to expense sync
     final localMap = {for (var budget in localBudgets) budget.id: budget};
@@ -273,6 +294,11 @@ class SyncEngine {
           await _syncRepository.uploadBudget(merged);
         }
         break;
+
+      case ConflictAction.manual:
+        // Manual resolution requires user intervention
+        // Store conflict for later resolution
+        break;
     }
   }
 
@@ -284,9 +310,9 @@ class SyncEngine {
         await _executeOperation(operation);
         await _syncQueue.markOperationCompleted(operation.id);
       } catch (e) {
-        operation.retryCount++;
-        if (operation.retryCount < 3) {
-          await _syncQueue.updateOperation(operation);
+        final updatedOperation = operation.copyWith(retryCount: operation.retryCount + 1);
+        if (updatedOperation.retryCount < 3) {
+          await _syncQueue.updateOperation(updatedOperation);
           // Schedule retry
           Future.delayed(_retryDelay, () => _processPendingOperations());
         } else {

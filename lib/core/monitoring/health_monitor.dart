@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 import 'package:finwise/core/config/environments.dart';
 import 'package:finwise/core/errors/failure.dart';
 import 'package:finwise/core/monitoring/performance_monitor.dart';
 import 'package:finwise/data/datasources/remote/api_client.dart';
 import 'package:finwise/domain/repositories/auth_repository.dart';
 import 'package:finwise/domain/repositories/expense_repository.dart';
+import 'package:flutter/material.dart';
 
 /// System health monitoring service
 /// Continuously monitors all system components and services
@@ -342,9 +344,9 @@ class HealthMonitor {
     }
 
     responseTimes.forEach((service, times) {
-      final avg = times.fold<Duration>(Duration.zero, (sum, time) => sum + time) /
-                 times.length;
-      averages[service] = avg.inMilliseconds.toDouble();
+      final total = times.fold<Duration>(Duration.zero, (sum, time) => sum + time);
+      final avg = total.inMilliseconds / times.length;
+      averages[service] = avg.toDouble();
     });
 
     return averages;
@@ -371,7 +373,7 @@ class HealthEvent {
   final DateTime timestamp;
   final Map<String, dynamic> metadata;
 
-  const HealthEvent({
+  HealthEvent({
     required this.type,
     required this.message,
     required this.status,
@@ -711,7 +713,7 @@ class HealthAlert {
   final DateTime timestamp;
   final Map<String, dynamic> metadata;
 
-  const HealthAlert({
+  HealthAlert({
     required this.title,
     required this.message,
     required this.severity,

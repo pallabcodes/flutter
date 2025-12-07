@@ -232,11 +232,11 @@ class AuthRepositoryImpl implements AuthRepository {
       case 'invalid-credential':
         return AuthFailure.invalidCredentials();
       case 'email-already-in-use':
-        return ValidationFailure('Email is already in use');
+        return ValidationFailure(message: 'Email is already in use');
       case 'weak-password':
-        return ValidationFailure('Password is too weak');
+        return ValidationFailure(message: 'Password is too weak');
       case 'invalid-email':
-        return ValidationFailure('Invalid email format');
+        return ValidationFailure(message: 'Invalid email format');
       case 'requires-recent-login':
         return AuthFailure(message: 'Please sign in again to perform this action');
       case 'too-many-requests':

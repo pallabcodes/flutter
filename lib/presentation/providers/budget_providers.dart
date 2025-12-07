@@ -1,5 +1,7 @@
 import 'package:finwise/core/config/injection.dart';
 import 'package:finwise/domain/entities/budget.dart';
+import 'package:finwise/domain/entities/expense.dart';
+import 'package:finwise/domain/repositories/budget_repository.dart';
 import 'package:finwise/domain/usecases/budget_usecases.dart';
 import 'package:finwise/presentation/providers/auth_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

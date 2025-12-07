@@ -209,7 +209,7 @@ class RouteConfig {
   });
 
   /// Default route configurations
-  static const List<RouteConfig> defaults = [
+  static final List<RouteConfig> defaults = [
     RouteConfig(
       name: AppRouter.camera,
       transition: RouteTransitions.fade,
@@ -231,7 +231,7 @@ class RouteConfig {
   static RouteConfig? getConfig(String routeName) {
     return defaults.firstWhere(
       (config) => config.name == routeName,
-      orElse: () => const RouteConfig(
+      orElse: () => RouteConfig(
         name: '',
         transition: RouteTransitions.material,
       ),

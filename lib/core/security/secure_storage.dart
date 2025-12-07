@@ -37,9 +37,7 @@ class SecureStorage {
         await _storage.write(key: _encryptionKeyKey, value: encryptedKey);
       }
     } catch (e) {
-      throw StorageFailure(
-        message: 'Failed to initialize secure storage: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to initialize secure storage: ${e.toString()}');
     }
   }
 
@@ -49,9 +47,7 @@ class SecureStorage {
       final encryptedToken = await EncryptionService.encryptData(token);
       await _storage.write(key: _userTokenKey, value: encryptedToken);
     } catch (e) {
-      throw StorageFailure(
-        message: 'Failed to store auth token: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to store auth token: ${e.toString()}');
     }
   }
 
@@ -63,9 +59,7 @@ class SecureStorage {
 
       return await EncryptionService.decryptData(encryptedToken);
     } catch (e) {
-      throw StorageFailure(
-        message: 'Failed to retrieve auth token: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to retrieve auth token: ${e.toString()}');
     }
   }
 
@@ -75,9 +69,7 @@ class SecureStorage {
       final encryptedToken = await EncryptionService.encryptData(token);
       await _storage.write(key: _refreshTokenKey, value: encryptedToken);
     } catch (e) {
-      throw StorageFailure(
-        message: 'Failed to store refresh token: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to store refresh token: ${e.toString()}');
     }
   }
 
@@ -89,9 +81,7 @@ class SecureStorage {
 
       return await EncryptionService.decryptData(encryptedToken);
     } catch (e) {
-      throw StorageFailure(
-        message: 'Failed to retrieve refresh token: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to retrieve refresh token: ${e.toString()}');
     }
   }
 
@@ -100,9 +90,7 @@ class SecureStorage {
     try {
       await _storage.write(key: _userIdKey, value: userId);
     } catch (e) {
-      throw StorageFailure(
-        message: 'Failed to store user ID: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to store user ID: ${e.toString()}');
     }
   }
 
@@ -111,9 +99,7 @@ class SecureStorage {
     try {
       return await _storage.read(key: _userIdKey);
     } catch (e) {
-      throw StorageFailure(
-        message: 'Failed to retrieve user ID: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to retrieve user ID: ${e.toString()}');
     }
   }
 
@@ -125,9 +111,7 @@ class SecureStorage {
         value: enabled.toString(),
       );
     } catch (e) {
-      throw StorageFailure(
-        message: 'Failed to store biometric preference: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to store biometric preference: ${e.toString()}');
     }
   }
 
@@ -147,9 +131,7 @@ class SecureStorage {
       final encryptedId = await EncryptionService.encryptData(deviceId);
       await _storage.write(key: _deviceIdKey, value: encryptedId);
     } catch (e) {
-      throw StorageFailure(
-        message: 'Failed to store device ID: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to store device ID: ${e.toString()}');
     }
   }
 
@@ -161,9 +143,7 @@ class SecureStorage {
 
       return await EncryptionService.decryptData(encryptedId);
     } catch (e) {
-      throw StorageFailure(
-        message: 'Failed to retrieve device ID: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to retrieve device ID: ${e.toString()}');
     }
   }
 
@@ -174,9 +154,7 @@ class SecureStorage {
       final encryptedTimestamp = await EncryptionService.encryptData(timestampString);
       await _storage.write(key: _lastSyncKey, value: encryptedTimestamp);
     } catch (e) {
-      throw StorageFailure(
-        message: 'Failed to store sync timestamp: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to store sync timestamp: ${e.toString()}');
     }
   }
 
@@ -199,8 +177,7 @@ class SecureStorage {
       final encryptedData = await EncryptionService.encryptData(data);
       await _storage.write(key: 'data_$key', value: encryptedData);
     } catch (e) {
-      throw StorageFailure(
-        message: 'Failed to store encrypted data: ${e.toString()}',
+      throw UnexpectedFailure.withMessage('Failed to store encrypted data: ${e.toString()}',
       );
     }
   }
@@ -213,9 +190,7 @@ class SecureStorage {
 
       return await EncryptionService.decryptData(encryptedData);
     } catch (e) {
-      throw StorageFailure(
-        message: 'Failed to retrieve encrypted data: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to retrieve encrypted data: ${e.toString()}');
     }
   }
 
@@ -224,9 +199,7 @@ class SecureStorage {
     try {
       await _storage.delete(key: key);
     } catch (e) {
-      throw StorageFailure(
-        message: 'Failed to delete data: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to delete data: ${e.toString()}');
     }
   }
 
@@ -235,9 +208,7 @@ class SecureStorage {
     try {
       await _storage.deleteAll();
     } catch (e) {
-      throw StorageFailure(
-        message: 'Failed to clear all data: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to clear all data: ${e.toString()}');
     }
   }
 
@@ -251,9 +222,7 @@ class SecureStorage {
         _storage.delete(key: _biometricEnabledKey),
       ]);
     } catch (e) {
-      throw StorageFailure(
-        message: 'Failed to clear auth data: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to clear auth data: ${e.toString()}');
     }
   }
 
@@ -346,9 +315,7 @@ class SecureStorage {
 
       return await EncryptionService.encryptData(backupJson);
     } catch (e) {
-      throw StorageFailure(
-        message: 'Failed to create backup: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to create backup: ${e.toString()}');
     }
   }
 
@@ -363,9 +330,7 @@ class SecureStorage {
         await _storage.write(key: entry.key, value: entry.value as String);
       }
     } catch (e) {
-      throw StorageFailure(
-        message: 'Failed to restore backup: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to restore backup: ${e.toString()}');
     }
   }
 }

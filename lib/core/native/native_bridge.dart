@@ -143,23 +143,23 @@ class IOSNativeBridge extends NativeBridge {
   /// Check if iOS features are available
   static Future<IOSCapabilities> getCapabilities() async {
     final features = await Future.wait([
-      isFeatureAvailable('siri_shortcuts'),
-      isFeatureAvailable('apple_pay'),
-      isFeatureAvailable('icloud_sync'),
-      isFeatureAvailable('face_id'),
-      isFeatureAvailable('touch_id'),
-      isFeatureAvailable('health_kit'),
-      isFeatureAvailable('home_kit'),
+      NativeBridge.isFeatureAvailable('siri_shortcuts'),
+      NativeBridge.isFeatureAvailable('apple_pay'),
+      NativeBridge.isFeatureAvailable('icloud_sync'),
+      NativeBridge.isFeatureAvailable('face_id'),
+      NativeBridge.isFeatureAvailable('touch_id'),
+      NativeBridge.isFeatureAvailable('health_kit'),
+      NativeBridge.isFeatureAvailable('home_kit'),
     ]);
 
     return IOSCapabilities(
-      siriShortcuts: features[0],
-      applePay: features[1],
-      iCloudSync: features[2],
-      faceId: features[3],
-      touchId: features[4],
-      healthKit: features[5],
-      homeKit: features[6],
+      siriShortcuts: features[0] as bool,
+      applePay: features[1] as bool,
+      iCloudSync: features[2] as bool,
+      faceId: features[3] as bool,
+      touchId: features[4] as bool,
+      healthKit: features[5] as bool,
+      homeKit: features[6] as bool,
     );
   }
 
@@ -170,7 +170,7 @@ class IOSNativeBridge extends NativeBridge {
     required String phrase,
     Map<String, dynamic>? userInfo,
   }) async {
-    await invokeNativeMethod('addSiriShortcut', {
+    await NativeBridge.invokeNativeMethod('addSiriShortcut', {
       'identifier': identifier,
       'title': title,
       'phrase': phrase,
@@ -184,7 +184,7 @@ class IOSNativeBridge extends NativeBridge {
     required String currency,
     String? description,
   }) async {
-    final result = await invokeNativeMethod<Map<String, dynamic>>('processApplePay', {
+    final result = await NativeBridge.invokeNativeMethod<Map<String, dynamic>>('processApplePay', {
       'amount': amount,
       'currency': currency,
       'description': description,
@@ -195,7 +195,7 @@ class IOSNativeBridge extends NativeBridge {
 
   /// Sync data with iCloud
   static Future<void> syncWithiCloud(String data) async {
-    await invokeNativeMethod('syncWithiCloud', {'data': data});
+    await NativeBridge.invokeNativeMethod('syncWithiCloud', {'data': data});
   }
 
   /// Authenticate with Face ID/Touch ID
@@ -204,7 +204,7 @@ class IOSNativeBridge extends NativeBridge {
     bool useFaceId = true,
     bool useTouchId = true,
   }) async {
-    final result = await invokeNativeMethod<Map<String, dynamic>>('authenticateBiometrics', {
+    final result = await NativeBridge.invokeNativeMethod<Map<String, dynamic>>('authenticateBiometrics', {
       'reason': reason ?? 'Authenticate to continue',
       'useFaceId': useFaceId,
       'useTouchId': useTouchId,
@@ -219,7 +219,7 @@ class IOSNativeBridge extends NativeBridge {
     String? url,
     List<String>? imagePaths,
   }) async {
-    await invokeNativeMethod('shareContent', {
+    await NativeBridge.invokeNativeMethod('shareContent', {
       'text': text,
       'url': url,
       'imagePaths': imagePaths,
@@ -232,21 +232,21 @@ class AndroidNativeBridge extends NativeBridge {
   /// Check if Android features are available
   static Future<AndroidCapabilities> getCapabilities() async {
     final features = await Future.wait([
-      isFeatureAvailable('google_pay'),
-      isFeatureAvailable('android_auto'),
-      isFeatureAvailable('biometric_auth'),
-      isFeatureAvailable('dynamic_theming'),
-      isFeatureAvailable('notification_channels'),
-      isFeatureAvailable('background_location'),
+      NativeBridge.isFeatureAvailable('google_pay'),
+      NativeBridge.isFeatureAvailable('android_auto'),
+      NativeBridge.isFeatureAvailable('biometric_auth'),
+      NativeBridge.isFeatureAvailable('dynamic_theming'),
+      NativeBridge.isFeatureAvailable('notification_channels'),
+      NativeBridge.isFeatureAvailable('background_location'),
     ]);
 
     return AndroidCapabilities(
-      googlePay: features[0],
-      androidAuto: features[1],
-      biometricAuth: features[2],
-      dynamicTheming: features[3],
-      notificationChannels: features[4],
-      backgroundLocation: features[5],
+      googlePay: features[0] as bool,
+      androidAuto: features[1] as bool,
+      biometricAuth: features[2] as bool,
+      dynamicTheming: features[3] as bool,
+      notificationChannels: features[4] as bool,
+      backgroundLocation: features[5] as bool,
     );
   }
 
@@ -256,7 +256,7 @@ class AndroidNativeBridge extends NativeBridge {
     required String currency,
     String? description,
   }) async {
-    final result = await invokeNativeMethod<Map<String, dynamic>>('processGooglePay', {
+    final result = await NativeBridge.invokeNativeMethod<Map<String, dynamic>>('processGooglePay', {
       'amount': amount,
       'currency': currency,
       'description': description,
@@ -267,12 +267,12 @@ class AndroidNativeBridge extends NativeBridge {
 
   /// Enable Android Auto integration
   static Future<void> enableAndroidAuto() async {
-    await invokeNativeMethod('enableAndroidAuto');
+    await NativeBridge.invokeNativeMethod('enableAndroidAuto');
   }
 
   /// Get dynamic color scheme (Material You)
   static Future<ColorScheme> getDynamicColorScheme() async {
-    final result = await invokeNativeMethod<Map<String, dynamic>>('getDynamicColorScheme');
+    final result = await NativeBridge.invokeNativeMethod<Map<String, dynamic>>('getDynamicColorScheme');
     return ColorScheme.fromJson(result);
   }
 
@@ -283,7 +283,7 @@ class AndroidNativeBridge extends NativeBridge {
     required String description,
     int importance = 3, // NotificationManager.IMPORTANCE_DEFAULT
   }) async {
-    await invokeNativeMethod('createNotificationChannel', {
+    await NativeBridge.invokeNativeMethod('createNotificationChannel', {
       'id': id,
       'name': name,
       'description': description,
@@ -298,7 +298,7 @@ class AndroidNativeBridge extends NativeBridge {
     required String body,
     String? payload,
   }) async {
-    await invokeNativeMethod('showNotification', {
+    await NativeBridge.invokeNativeMethod('showNotification', {
       'channelId': channelId,
       'title': title,
       'body': body,
@@ -314,7 +314,7 @@ class AndroidNativeBridge extends NativeBridge {
     bool useFingerprint = true,
     bool useFace = true,
   }) async {
-    final result = await invokeNativeMethod<Map<String, dynamic>>('authenticateBiometrics', {
+    final result = await NativeBridge.invokeNativeMethod<Map<String, dynamic>>('authenticateBiometrics', {
       'title': title ?? 'Authenticate',
       'subtitle': subtitle,
       'description': description ?? 'Use your biometric credential to authenticate',

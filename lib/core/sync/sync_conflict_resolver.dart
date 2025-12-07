@@ -1,4 +1,6 @@
 import 'package:finwise/core/sync/sync_models.dart';
+import 'package:finwise/domain/entities/expense.dart';
+import 'package:finwise/domain/entities/budget.dart';
 
 /// Conflict resolver for handling data synchronization conflicts
 abstract class SyncConflictResolver {
@@ -333,21 +335,22 @@ class ConflictAnalysis {
       'time_distribution': <String, int>{},
     };
 
+    final byType = analysis['by_type'] as Map<String, int>;
+    final bySeverity = analysis['by_severity'] as Map<String, int>;
+    final timeDistribution = analysis['time_distribution'] as Map<String, int>;
+    
     for (final conflict in conflicts) {
       // Count by type
-      analysis['by_type'][conflict.type.name] =
-          (analysis['by_type'][conflict.type.name] ?? 0) + 1;
+      byType[conflict.type.name] = (byType[conflict.type.name] ?? 0) + 1;
 
       // Count by severity
       final severity = ConflictResolutionUtils.getConflictSeverity(conflict);
-      analysis['by_severity'][severity.name] =
-          (analysis['by_severity'][severity.name] ?? 0) + 1;
+      bySeverity[severity.name] = (bySeverity[severity.name] ?? 0) + 1;
 
       // Analyze time patterns
       final hour = conflict.timestamp.hour;
       final timeSlot = '${hour ~/ 6 * 6}-${(hour ~/ 6 + 1) * 6}'; // 6-hour slots
-      analysis['time_distribution'][timeSlot] =
-          (analysis['time_distribution'][timeSlot] ?? 0) + 1;
+      timeDistribution[timeSlot] = (timeDistribution[timeSlot] ?? 0) + 1;
     }
 
     return analysis;

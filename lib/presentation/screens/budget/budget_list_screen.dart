@@ -1,3 +1,4 @@
+import 'package:finwise/core/navigation/app_router.dart';
 import 'package:finwise/presentation/providers/budget_providers.dart';
 import 'package:finwise/presentation/screens/budget/create_budget_screen.dart';
 import 'package:finwise/presentation/theme/app_theme.dart';

@@ -84,3 +84,6 @@ android/release.keystore
 android/release.properties
 ios/release.p12
 ios/release.mobileprovision
+
+# FVM Version Cache
+.fvm/

@@ -243,7 +243,7 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
   }
 
   /// Maps database expense model to domain entity
-  Expense _mapDatabaseExpenseToEntity(db_expense.Expense expense) {
+  Expense _mapDatabaseExpenseToEntity(db.Expense expense) {
     return Expense(
       id: expense.id,
       userId: expense.userId,
@@ -280,7 +280,7 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
               ),
               interval: expense.recurringInterval ?? 1,
               endDate: expense.recurringEndDate,
-              nextOccurrence: expense.nextOccurrence,
+              nextOccurrence: expense.nextOccurrence ?? DateTime.now(),
             )
           : null,
       createdAt: expense.createdAt,
@@ -292,7 +292,7 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
 
   /// Maps domain entity to database companion
   db.ExpensesCompanion _mapEntityToDatabaseCompanion(Expense expense) {
-    return ExpensesCompanion(
+    return db.ExpensesCompanion(
       id: drift.Value(expense.id),
       userId: drift.Value(expense.userId),
       amount: drift.Value(expense.amount),

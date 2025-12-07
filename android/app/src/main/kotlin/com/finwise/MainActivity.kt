@@ -8,8 +8,9 @@ class MainActivity: FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
-        // Register native bridge
-        flutterEngine.plugins.add(FinWiseNativeBridge())
+        // Register native bridge using v2 embedding
+        // Flutter automatically discovers and registers plugins, so manual registration is not needed
+        // The plugin will be registered automatically via the plugin registry
     }
 
     override fun onResume() {

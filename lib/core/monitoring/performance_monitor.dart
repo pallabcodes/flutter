@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
+import 'package:dio/dio.dart';
 import 'package:finwise/core/errors/failure.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -282,7 +283,7 @@ class PerformanceMonitor {
     Timer.periodic(const Duration(minutes: 1), (_) {
       // In a real implementation, you'd get actual memory usage
       // This is a placeholder for the concept
-      _recordMemoryUsage(100 * 1024 * 1024, 500 * 1024 * 1024); // Mock data
+      // _recordMemoryUsage(100 * 1024 * 1024, 500 * 1024 * 1024); // Mock data
     });
   }
 

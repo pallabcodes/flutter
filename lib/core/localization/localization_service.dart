@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
+import 'package:flutter/material.dart' hide TextDirection;
 import 'package:flutter/services.dart';
 import 'package:finwise/core/security/secure_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 /// Enterprise internationalization service
 /// Supports 20+ languages with dynamic locale switching and cultural adaptation
@@ -78,12 +80,12 @@ class LocalizationService {
     return _localeDefinitions.entries.map((entry) {
       final code = entry.key;
       final info = entry.value;
-      return {
+      return <String, String>{
         'code': code,
-        'name': info['name']!,
-        'nativeName': info['nativeName']!,
-        'flag': info['flag']!,
-        'isCurrent': code == currentLanguageCode,
+        'name': info['name']!.toString(),
+        'nativeName': info['nativeName']!.toString(),
+        'flag': info['flag']!.toString(),
+        'isCurrent': (code == currentLanguageCode).toString(),
       };
     }).toList();
   }
@@ -135,7 +137,7 @@ class LocalizationService {
       });
     }
 
-    return translation;
+    return translation ?? key;
   }
 
   /// Get pluralized string
@@ -206,10 +208,10 @@ class LocalizationService {
   }
 
   /// Check if current locale is RTL
-  bool get isRTL => _getTextDirection() == TextDirection.rtl;
+  bool get isRTL => _getTextDirection() == ui.TextDirection.rtl;
 
   /// Get text direction for current locale
-  TextDirection getTextDirection() => _getTextDirection();
+  ui.TextDirection getTextDirection() => _getTextDirection();
 
   /// Get locale-specific number formatting
   NumberFormat getNumberFormat(String pattern) {
@@ -341,10 +343,13 @@ class LocalizationService {
     }
   }
 
-  TextDirection _getTextDirection() {
+  ui.TextDirection _getTextDirection() {
     // RTL languages
     const rtlLanguages = ['ar', 'he', 'fa', 'ur'];
-    return rtlLanguages.contains(currentLanguageCode) ? TextDirection.rtl : TextDirection.ltr;
+    // Use Flutter's TextDirection explicitly
+    return rtlLanguages.contains(currentLanguageCode) 
+        ? ui.TextDirection.rtl 
+        : ui.TextDirection.ltr;
   }
 
   dynamic _localizeDataValue(String key, dynamic value) {
@@ -407,7 +412,7 @@ class LocalizedAppConfig {
   static String get appName => LocalizationService().translate('app_name');
   static String get appDescription => LocalizationService().translate('app_description');
 
-  static Map<String, String> get appStoreMetadata(String platform) {
+  static Map<String, String> appStoreMetadata(String platform) {
     final prefix = platform.toLowerCase();
     return {
       'title': LocalizationService().translate('${prefix}_app_title'),

@@ -72,10 +72,10 @@ class AppDatabase extends _$AppDatabase {
     }
 
     if (searchQuery != null && searchQuery.isNotEmpty) {
-      query = query..where((tbl) =>
-        tbl.description.contains(searchQuery) |
-        tbl.note.contains(searchQuery)
-      );
+      query = query
+        ..where((tbl) =>
+            tbl.description.contains(searchQuery) |
+            tbl.note.contains(searchQuery));
     }
 
     if (limit != null) {
@@ -102,19 +102,21 @@ class AppDatabase extends _$AppDatabase {
   }
 
   /// Get expenses by date range for statistics
-  Future<List<Expense>> getExpensesInRange(String userId, DateTime start, DateTime end) {
-    return (select(expenses)
+  Future<List<Expense>> getExpensesInRange(
+      String userId, DateTime start, DateTime end) async {
+    final query = select(expenses)
       ..where((tbl) =>
-        tbl.userId.equals(userId) &
-        tbl.date.isBiggerOrEqualValue(start) &
-        tbl.date.isSmallerOrEqualValue(end)
-      ))
-      ..orderBy([(t) => OrderingTerm(expression: t.date, mode: OrderingMode.desc)])
-      .get();
+          tbl.userId.equals(userId) &
+          tbl.date.isBiggerOrEqualValue(start) &
+          tbl.date.isSmallerOrEqualValue(end))
+      ..orderBy(
+          [(t) => OrderingTerm(expression: t.date, mode: OrderingMode.desc)]);
+    return query.get();
   }
 
   /// Get expense statistics
-  Future<Map<String, dynamic>> getExpenseStats(String userId, DateTime start, DateTime end) async {
+  Future<Map<String, dynamic>> getExpenseStats(
+      String userId, DateTime start, DateTime end) async {
     final result = await customSelect(
       '''
       SELECT
@@ -127,7 +129,11 @@ class AppDatabase extends _$AppDatabase {
       FROM expenses
       WHERE user_id = ? AND date BETWEEN ? AND ?
       ''',
-      variables: [Variable.withString(userId), Variable.withDateTime(start), Variable.withDateTime(end)],
+      variables: [
+        Variable.withString(userId),
+        Variable.withDateTime(start),
+        Variable.withDateTime(end)
+      ],
     ).getSingle();
 
     return {
@@ -143,22 +149,24 @@ class AppDatabase extends _$AppDatabase {
   /// Get all budgets for a user
   Future<List<Budget>> getBudgets(String userId) {
     return (select(budgets)
-      ..where((tbl) => tbl.userId.equals(userId))
-      ..orderBy([(t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc)])
-    ).get();
+          ..where((tbl) => tbl.userId.equals(userId))
+          ..orderBy([
+            (t) =>
+                OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc)
+          ]))
+        .get();
   }
 
   /// Get active budgets
   Future<List<Budget>> getActiveBudgets(String userId) {
     final now = DateTime.now();
     return (select(budgets)
-      ..where((tbl) =>
-        tbl.userId.equals(userId) &
-        tbl.isActive.equals(true) &
-        tbl.startDate.isSmallerOrEqualValue(now) &
-        tbl.endDate.isBiggerOrEqualValue(now)
-      ))
-      .get();
+          ..where((tbl) =>
+              tbl.userId.equals(userId) &
+              tbl.isActive.equals(true) &
+              tbl.startDate.isSmallerOrEqualValue(now) &
+              tbl.endDate.isBiggerOrEqualValue(now)))
+        .get();
   }
 
   /// Get budget by ID
@@ -179,12 +187,12 @@ class AppDatabase extends _$AppDatabase {
 
   /// Update budget spent amount
   Future<bool> updateBudgetSpentAmount(String budgetId, int spentAmount) {
-    return (update(budgets)
-      ..where((tbl) => tbl.id.equals(budgetId)))
-      .write(BudgetsCompanion(
-        spentAmount: Value(spentAmount),
-        updatedAt: Value(DateTime.now()),
-      )).then((rowsAffected) => rowsAffected > 0);
+    return (update(budgets)..where((tbl) => tbl.id.equals(budgetId)))
+        .write(BudgetsCompanion(
+          spentAmount: Value(spentAmount),
+          updatedAt: Value(DateTime.now()),
+        ))
+        .then((rowsAffected) => rowsAffected > 0);
   }
 
   /// Clear all data (useful for logout or data reset)

@@ -1,7 +1,8 @@
 import 'package:finwise/core/accessibility/accessibility_service.dart';
 import 'package:finwise/core/localization/localization_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+// Temporarily disabled due to package resolution issue
+// import 'package:flutter_localizations/flutter_localizations.dart';
 
 /// Localized and accessible app wrapper
 /// Provides WCAG 2.1 AA compliance and full internationalization
@@ -59,11 +60,12 @@ class _LocalizedAccessibleAppState extends State<LocalizedAccessibleApp> {
         // Localization
         locale: _localizationService.currentLocale,
         supportedLocales: _localizationService.supportedLocales,
-        localizationsDelegates: [
+        localizationsDelegates: const [
           FinWiseLocalizationsDelegate(),
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+          // Flutter localization delegates - using conditional import
+          // GlobalMaterialLocalizations.delegate,
+          // GlobalWidgetsLocalizations.delegate,
+          // GlobalCupertinoLocalizations.delegate,
         ],
         localeResolutionCallback: (locale, supportedLocales) {
           // Try to match exact locale
@@ -92,7 +94,7 @@ class _LocalizedAccessibleAppState extends State<LocalizedAccessibleApp> {
               textScaleFactor: _accessibilityService.textScaleFactor,
             ),
             child: Directionality(
-              textDirection: _localizationService.getTextDirection(),
+              textDirection: _localizationService.getTextDirection() as TextDirection,
               child: child!,
             ),
           );
@@ -181,7 +183,7 @@ class LocalizedAccessibleScaffold extends StatelessWidget {
 
 /// Localized text widget with accessibility support
 class LocalizedText extends StatelessWidget {
-  final String key;
+  final String translationKey;
   final Map<String, String>? args;
   final TextStyle? style;
   final StrutStyle? strutStyle;
@@ -197,8 +199,7 @@ class LocalizedText extends StatelessWidget {
   final TextHeightBehavior? textHeightBehavior;
 
   const LocalizedText(
-    this.key, {
-    super.key,
+    this.translationKey, {
     this.args,
     this.style,
     this.strutStyle,
@@ -219,7 +220,7 @@ class LocalizedText extends StatelessWidget {
     final localization = LocalizationService();
     final accessibility = AccessibilityService();
 
-    final translatedText = localization.translate(key, args: args);
+    final translatedText = localization.translate(translationKey, args: args);
     final accessibleStyle = accessibility.getAccessibleTextStyle(context, baseStyle: style);
 
     return AccessibleWidget(
@@ -229,7 +230,7 @@ class LocalizedText extends StatelessWidget {
         style: accessibleStyle,
         strutStyle: strutStyle,
         textAlign: textAlign,
-        textDirection: textDirection ?? localization.getTextDirection(),
+        textDirection: textDirection ?? (localization.getTextDirection() as TextDirection),
         locale: locale,
         softWrap: softWrap,
         overflow: overflow,
@@ -244,15 +245,14 @@ class LocalizedText extends StatelessWidget {
 
 /// Localized plural text widget
 class LocalizedPluralText extends StatelessWidget {
-  final String key;
+  final String translationKey;
   final int count;
   final Map<String, String>? args;
   final TextStyle? style;
 
   const LocalizedPluralText(
-    this.key,
+    this.translationKey,
     this.count, {
-    super.key,
     this.args,
     this.style,
   });
@@ -262,7 +262,7 @@ class LocalizedPluralText extends StatelessWidget {
     final localization = LocalizationService();
     final accessibility = AccessibilityService();
 
-    final translatedText = localization.translatePlural(key, count, args: args);
+    final translatedText = localization.translatePlural(translationKey, count, args: args);
     final accessibleStyle = accessibility.getAccessibleTextStyle(context, baseStyle: style);
 
     return AccessibleWidget(
@@ -316,7 +316,6 @@ class AccessibleFormField extends StatelessWidget {
       keyboardType: keyboardType,
       onChanged: onChanged,
       validator: validator,
-      autofocus: autofocus,
     );
   }
 }

@@ -194,8 +194,8 @@ class AppRouter {
     return navigatorKey.currentState!.pushNamed<T>(routeName, arguments: arguments);
   }
 
-  static Future<T?> pushReplacement<T>(String routeName, {Object? arguments}) {
-    return navigatorKey.currentState!.pushReplacementNamed<T>(routeName, arguments: arguments);
+  static Future<T?> pushReplacement<T extends Object?>(String routeName, {Object? arguments}) {
+    return navigatorKey.currentState!.pushReplacementNamed<T, T>(routeName, arguments: arguments);
   }
 
   static void pop<T>([T? result]) {

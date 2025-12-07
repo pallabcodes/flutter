@@ -44,11 +44,12 @@ class NoParams extends UseCaseParams {
 
 /// Use case result wrapper for operations that return no data
 /// Useful for operations like delete, update, etc.
-class Unit {
-  const Unit._();
-
-  static const Unit value = Unit._();
-}
+/// Note: Using dartz's Unit instead of custom implementation
+// class Unit {
+//   const Unit._();
+//
+//   static const Unit value = Unit._();
+// }
 
 /// Extension methods for Either<Failure, T> results
 extension EitherX<L, R> on Either<L, R> {

@@ -18,8 +18,8 @@ class CreateBudgetUseCase implements UseCase<Budget, CreateBudgetParams> {
   Future<Either<Failure, Budget>> call(CreateBudgetParams params) async {
     // Validate budget data
     final validationResult = _validateBudget(params.budget);
-    if (validationResult.isLeft) {
-      return validationResult;
+    if (validationResult.isLeft()) {
+      return Left(validationResult.fold((l) => l, (r) => throw Exception('Unexpected')));
     }
 
     // Create budget with current timestamp
@@ -36,20 +36,20 @@ class CreateBudgetUseCase implements UseCase<Budget, CreateBudgetParams> {
 
   Either<Failure, Unit> _validateBudget(Budget budget) {
     if (budget.targetAmount <= 0) {
-      return Left(ValidationFailure('Budget amount must be greater than zero'));
+      return Left(ValidationFailure(message: 'Budget amount must be greater than zero'));
     }
 
     if (budget.name.trim().isEmpty) {
-      return Left(ValidationFailure('Budget name cannot be empty'));
+      return Left(ValidationFailure(message: 'Budget name cannot be empty'));
     }
 
     if (budget.userId.isEmpty) {
-      return Left(ValidationFailure('User ID is required'));
+      return Left(ValidationFailure(message: 'User ID is required'));
     }
 
     // Validate date range
     if (budget.endDate.isBefore(budget.startDate)) {
-      return Left(ValidationFailure('End date must be after start date'));
+      return Left(ValidationFailure(message: 'End date must be after start date'));
     }
 
     return const Right(unit);
@@ -159,8 +159,8 @@ class UpdateBudgetUseCase implements UseCase<Budget, UpdateBudgetParams> {
   Future<Either<Failure, Budget>> call(UpdateBudgetParams params) async {
     // Validate updated budget
     final validationResult = _validateBudget(params.updatedBudget);
-    if (validationResult.isLeft) {
-      return validationResult;
+    if (validationResult.isLeft()) {
+      return Left(validationResult.fold((l) => l, (r) => throw Exception('Unexpected')));
     }
 
     // Update with current timestamp
@@ -173,15 +173,15 @@ class UpdateBudgetUseCase implements UseCase<Budget, UpdateBudgetParams> {
 
   Either<Failure, Unit> _validateBudget(Budget budget) {
     if (budget.targetAmount <= 0) {
-      return Left(ValidationFailure('Budget amount must be greater than zero'));
+      return Left(ValidationFailure(message: 'Budget amount must be greater than zero'));
     }
 
     if (budget.name.trim().isEmpty) {
-      return Left(ValidationFailure('Budget name cannot be empty'));
+      return Left(ValidationFailure(message: 'Budget name cannot be empty'));
     }
 
     if (budget.endDate.isBefore(budget.startDate)) {
-      return Left(ValidationFailure('End date must be after start date'));
+      return Left(ValidationFailure(message: 'End date must be after start date'));
     }
 
     return const Right(unit);

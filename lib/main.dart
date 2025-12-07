@@ -1,6 +1,8 @@
 import 'package:finwise/core/accessibility/localized_app.dart';
 import 'package:finwise/core/config/app_config.dart';
 import 'package:finwise/core/config/injection.dart';
+import 'package:finwise/core/monitoring/analytics_service.dart';
+import 'package:finwise/core/monitoring/health_monitor.dart';
 import 'package:finwise/core/monitoring/monitoring_dashboard.dart';
 import 'package:finwise/core/monitoring/performance_monitor.dart';
 import 'package:finwise/core/navigation/app_router.dart';
@@ -25,11 +27,16 @@ void main() async {
   // Initialize date formatting for localization
   await initializeDateFormatting();
 
-  // Initialize Firebase
-  await Firebase.initializeApp();
-
-  // Configure Crashlytics for error reporting
-  await _configureCrashlytics();
+  // Skip Firebase initialization completely - not needed for basic app functionality
+  // Uncomment below if you want to use Firebase:
+  /*
+  try {
+    await Firebase.initializeApp();
+    await _configureCrashlytics();
+  } catch (e) {
+    debugPrint('Firebase initialization failed: $e');
+  }
+  */
 
   // Initialize dependency injection
   await configureDependencies();
@@ -55,11 +62,7 @@ void main() async {
   runApp(
     ProviderScope(
       observers: kDebugMode ? [AppProviderObserver()] : null,
-      child: MonitoringOverlay(
-        showPerformance: kDebugMode,
-        showAnalytics: kDebugMode,
-        child: const FinWiseApp(),
-      ),
+      child: const FinWiseApp(),
     ),
   );
 }
@@ -107,6 +110,7 @@ class FinWiseApp extends ConsumerWidget {
             navigatorKey: AppRouter.navigatorKey,
             onGenerateRoute: AppRouter.onGenerateRoute,
             initialRoute: AppRouter.initialRoute,
+            supportedLocales: const [Locale('en', 'US')],
             // Add navigation observer for auth monitoring
             navigatorObservers: [
               AuthNavigationObserver(RouteGuard()),
@@ -122,6 +126,7 @@ class FinWiseApp extends ConsumerWidget {
         title: AppConfig.appName,
         theme: AppTheme.lightTheme,
         debugShowCheckedModeBanner: false,
+        supportedLocales: const [Locale('en', 'US')],
         home: Scaffold(
           body: Center(
             child: Column(
@@ -156,6 +161,7 @@ class FinWiseApp extends ConsumerWidget {
         title: AppConfig.appName,
         theme: AppTheme.lightTheme,
         debugShowCheckedModeBanner: false,
+        supportedLocales: const [Locale('en', 'US')],
         home: const Scaffold(
           body: Center(
             child: CircularProgressIndicator(),

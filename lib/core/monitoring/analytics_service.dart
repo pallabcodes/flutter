@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:finwise/core/config/environments.dart';
 import 'package:finwise/core/security/secure_storage.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 /// Advanced analytics and user behavior tracking service
 /// Enterprise-grade analytics with privacy compliance
@@ -13,8 +15,23 @@ class AnalyticsService {
   factory AnalyticsService() => _instance;
   AnalyticsService._internal();
 
-  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
-  final FirebaseCrashlytics _crashlytics = FirebaseCrashlytics.instance;
+  FirebaseAnalytics? _analytics;
+  FirebaseCrashlytics? _crashlytics;
+  bool _firebaseAvailable = false;
+
+  /// Initialize Firebase analytics (optional)
+  void _initFirebase() {
+    try {
+      _analytics = FirebaseAnalytics.instance;
+      _crashlytics = FirebaseCrashlytics.instance;
+      _firebaseAvailable = true;
+    } catch (e) {
+      _firebaseAvailable = false;
+      if (kDebugMode) {
+        print('Firebase Analytics not available: $e');
+      }
+    }
+  }
 
   final Map<String, dynamic> _userProperties = {};
   final Map<String, Experiment> _activeExperiments = {};
@@ -26,10 +43,12 @@ class AnalyticsService {
 
   /// Initialize analytics service
   Future<void> initialize() async {
+    _initFirebase();
+    
     // Check user consent
     _hasConsent = await _checkAnalyticsConsent();
 
-    if (_hasConsent && _isEnabled) {
+    if (_hasConsent && _isEnabled && _firebaseAvailable) {
       await _configureAnalytics();
       await _loadUserProperties();
       await _startSessionTracking();
@@ -38,6 +57,8 @@ class AnalyticsService {
         name: 'analytics_initialized',
         parameters: {'consent_given': true},
       ));
+    } else if (kDebugMode) {
+      print('Analytics disabled or Firebase not available');
     }
   }
 
@@ -52,8 +73,8 @@ class AnalyticsService {
         name: 'analytics_consent_granted',
         parameters: {},
       ));
-    } else {
-      await _analytics.setAnalyticsCollectionEnabled(false);
+    } else if (_firebaseAvailable) {
+      await _analytics?.setAnalyticsCollectionEnabled(false);
       _recordEvent(AnalyticsEvent(
         name: 'analytics_consent_revoked',
         parameters: {},
@@ -63,9 +84,15 @@ class AnalyticsService {
 
   /// Track screen view
   Future<void> trackScreenView(String screenName, {Map<String, dynamic>? parameters}) async {
-    if (!_canTrack) return;
+    if (!_canTrack || !_firebaseAvailable) {
+      _recordEvent(AnalyticsEvent(
+        name: 'screen_view',
+        parameters: {'screen_name': screenName, ...?parameters},
+      ));
+      return;
+    }
 
-    await _analytics.logEvent(
+    await _analytics?.logEvent(
       name: 'screen_view',
       parameters: {
         'screen_name': screenName,
@@ -97,10 +124,12 @@ class AnalyticsService {
       ...?parameters,
     };
 
-    await _analytics.logEvent(
-      name: 'user_action',
-      parameters: eventParams,
-    );
+    if (_firebaseAvailable) {
+      await _analytics?.logEvent(
+        name: 'user_action',
+        parameters: eventParams,
+      );
+    }
 
     _recordEvent(AnalyticsEvent(
       name: 'user_action',
@@ -115,14 +144,16 @@ class AnalyticsService {
   }) async {
     if (!_canTrack) return;
 
-    await _analytics.logEvent(
-      name: 'feature_usage',
-      parameters: {
-        'feature_name': featureName,
-        'action': action,
-        ...?metadata,
-      },
-    );
+    if (_firebaseAvailable) {
+      await _analytics?.logEvent(
+        name: 'feature_usage',
+        parameters: {
+          'feature_name': featureName,
+          'action': action,
+          ...?metadata,
+        },
+      );
+    }
 
     _recordEvent(AnalyticsEvent(
       name: 'feature_usage',
@@ -143,17 +174,19 @@ class AnalyticsService {
   }) async {
     if (!_canTrack) return;
 
-    await _analytics.logEvent(
-      name: 'expense_event',
-      parameters: {
-        'event_type': eventType,
-        'amount': amount,
-        'category': category,
-        'currency': currency,
-        'timestamp': DateTime.now().millisecondsSinceEpoch,
-        ...?metadata,
-      },
-    );
+    if (_firebaseAvailable) {
+      await _analytics?.logEvent(
+        name: 'expense_event',
+        parameters: {
+          'event_type': eventType,
+          'amount': amount,
+          'category': category,
+          'currency': currency,
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          ...?metadata,
+        },
+      );
+    }
 
     _recordEvent(AnalyticsEvent(
       name: 'expense_event',
@@ -175,16 +208,18 @@ class AnalyticsService {
   }) async {
     if (!_canTrack) return;
 
-    await _analytics.logEvent(
-      name: 'conversion',
-      parameters: {
-        'conversion_type': conversionType,
-        'value': value,
-        if (currency != null) 'currency': currency,
-        'timestamp': DateTime.now().millisecondsSinceEpoch,
-        ...?metadata,
-      },
-    );
+    if (_firebaseAvailable) {
+      await _analytics?.logEvent(
+        name: 'conversion',
+        parameters: {
+          'conversion_type': conversionType,
+          'value': value,
+          if (currency != null) 'currency': currency,
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          ...?metadata,
+        },
+      );
+    }
 
     _recordEvent(AnalyticsEvent(
       name: 'conversion',
@@ -203,10 +238,12 @@ class AnalyticsService {
 
     _userProperties[name] = value;
 
-    await _analytics.setUserProperty(
-      name: name,
-      value: value?.toString(),
-    );
+    if (_firebaseAvailable) {
+      await _analytics?.setUserProperty(
+        name: name,
+        value: value?.toString(),
+      );
+    }
 
     // Persist user properties
     await _saveUserProperties();
@@ -216,7 +253,9 @@ class AnalyticsService {
   Future<void> setUserId(String userId) async {
     if (!_canTrack) return;
 
-    await _analytics.setUserId(id: userId);
+    if (_firebaseAvailable) {
+      await _analytics?.setUserId(id: userId);
+    }
     await SecureStorage.storeEncryptedData('analytics_user_id', userId);
   }
 
@@ -228,22 +267,24 @@ class AnalyticsService {
   }) async {
     if (!_canTrack) return;
 
-    await _analytics.logEvent(
-      name: 'error_occurred',
-      parameters: {
-        'error_type': errorType,
-        'message': message,
-        'has_stack_trace': stackTrace != null,
-        ...?metadata,
-      },
-    );
+    if (_firebaseAvailable) {
+      await _analytics?.logEvent(
+        name: 'error_occurred',
+        parameters: {
+          'error_type': errorType,
+          'message': message,
+          'has_stack_trace': stackTrace != null,
+          ...?metadata,
+        },
+      );
 
-    // Also send to Crashlytics for error tracking
-    await _crashlytics.recordError(
-      Exception(message ?? errorType),
-      StackTrace.fromString(stackTrace ?? ''),
-      reason: metadata,
-    );
+      // Also send to Crashlytics for error tracking
+      await _crashlytics?.recordError(
+        Exception(message ?? errorType),
+        StackTrace.fromString(stackTrace ?? ''),
+        reason: metadata,
+      );
+    }
 
     _recordEvent(AnalyticsEvent(
       name: 'error_occurred',
@@ -267,13 +308,15 @@ class AnalyticsService {
 
     _activeExperiments[experimentId] = experiment;
 
-    await _analytics.logEvent(
-      name: 'experiment_started',
-      parameters: {
-        'experiment_id': experimentId,
-        'variant': variant,
-      },
-    );
+    if (_firebaseAvailable) {
+      await _analytics?.logEvent(
+        name: 'experiment_started',
+        parameters: {
+          'experiment_id': experimentId,
+          'variant': variant,
+        },
+      );
+    }
 
     _recordEvent(AnalyticsEvent(
       name: 'experiment_started',
@@ -288,14 +331,16 @@ class AnalyticsService {
   Future<void> trackExperimentGoal(String experimentId, String goalName) async {
     if (!_canTrack || !_activeExperiments.containsKey(experimentId)) return;
 
-    await _analytics.logEvent(
-      name: 'experiment_goal',
-      parameters: {
-        'experiment_id': experimentId,
-        'goal_name': goalName,
-        'variant': _activeExperiments[experimentId]!.variant,
-      },
-    );
+    if (_firebaseAvailable) {
+      await _analytics?.logEvent(
+        name: 'experiment_goal',
+        parameters: {
+          'experiment_id': experimentId,
+          'goal_name': goalName,
+          'variant': _activeExperiments[experimentId]!.variant,
+        },
+      );
+    }
 
     _recordEvent(AnalyticsEvent(
       name: 'experiment_goal',
@@ -314,14 +359,16 @@ class AnalyticsService {
     final experiment = _activeExperiments[experimentId]!;
     final duration = DateTime.now().difference(experiment.startTime);
 
-    await _analytics.logEvent(
-      name: 'experiment_ended',
-      parameters: {
-        'experiment_id': experimentId,
-        'variant': experiment.variant,
-        'duration_seconds': duration.inSeconds,
-      },
-    );
+    if (_firebaseAvailable) {
+      await _analytics?.logEvent(
+        name: 'experiment_ended',
+        parameters: {
+          'experiment_id': experimentId,
+          'variant': experiment.variant,
+          'duration_seconds': duration.inSeconds,
+        },
+      );
+    }
 
     _activeExperiments.remove(experimentId);
 
@@ -390,7 +437,9 @@ class AnalyticsService {
     await SecureStorage.deleteData('user_properties');
 
     // Reset analytics
-    await _analytics.resetAnalyticsData();
+    if (_firebaseAvailable) {
+      await _analytics?.resetAnalyticsData();
+    }
 
     _recordEvent(AnalyticsEvent(
       name: 'user_data_deleted',
@@ -408,13 +457,15 @@ class AnalyticsService {
   }
 
   Future<void> _configureAnalytics() async {
-    await _analytics.setAnalyticsCollectionEnabled(true);
+    if (!_firebaseAvailable) return;
+    
+    await _analytics?.setAnalyticsCollectionEnabled(true);
 
     // Configure session timeout (30 minutes)
-    await _analytics.setSessionTimeoutDuration(const Duration(minutes: 30));
+    await _analytics?.setSessionTimeoutDuration(const Duration(minutes: 30));
 
     // Set default event parameters
-    await _analytics.setDefaultEventParameters({
+    await _analytics?.setDefaultEventParameters({
       'app_version': '1.0.0',
       'platform': defaultTargetPlatform.name,
       'environment': EnvironmentConfig.current.name,
@@ -439,8 +490,10 @@ class AnalyticsService {
   }
 
   Future<void> _startSessionTracking() async {
+    if (!_firebaseAvailable) return;
+    
     // Track app open
-    await _analytics.logAppOpen();
+    await _analytics?.logAppOpen();
 
     _recordEvent(AnalyticsEvent(
       name: 'session_started',
@@ -473,7 +526,7 @@ class AnalyticsEvent {
   final Map<String, dynamic> parameters;
   final DateTime timestamp;
 
-  const AnalyticsEvent({
+  AnalyticsEvent({
     required this.name,
     required this.parameters,
     DateTime? timestamp,
@@ -501,9 +554,9 @@ class Experiment {
   final String id;
   final String variant;
   final DateTime startTime;
-  DateTime? endTime;
+  final DateTime? endTime;
 
-  const Experiment({
+  Experiment({
     required this.id,
     required this.variant,
     required this.startTime,

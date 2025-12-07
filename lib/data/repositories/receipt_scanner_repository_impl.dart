@@ -29,7 +29,7 @@ class ReceiptScannerRepositoryImpl implements ReceiptScannerRepository {
       final recognizedText = await _textRecognizer.processImage(inputImage);
 
       if (recognizedText.text.isEmpty) {
-        return Left(ValidationFailure('No text found in image. Please try a clearer photo.'));
+        return Left(ValidationFailure(message: 'No text found in image. Please try a clearer photo.'));
       }
 
       // Parse the recognized text
@@ -169,7 +169,7 @@ class ReceiptScannerRepositoryImpl implements ReceiptScannerRepository {
 
     for (final block in recognizedText.blocks) {
       for (final line in block.lines) {
-        totalConfidence += line.confidence;
+        totalConfidence += (line.confidence ?? 0.0);
         totalLines++;
       }
     }

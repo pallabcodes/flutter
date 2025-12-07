@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Provider for seeding sample data into the app
 final sampleDataProvider = FutureProvider<void>((ref) async {
   // Check if we already have expenses
-  final expensesAsync = await ref.read(expensesProvider.future);
+  final expensesAsync = ref.read(expensesProvider);
   final expenses = expensesAsync.maybeWhen(
     data: (data) => data,
     orElse: () => <Expense>[],
@@ -39,7 +39,7 @@ final sampleDataProvider = FutureProvider<void>((ref) async {
 
 /// Provider to check if sample data should be seeded
 final shouldSeedSampleDataProvider = FutureProvider<bool>((ref) async {
-  final expensesAsync = await ref.read(expensesProvider.future);
+  final expensesAsync = ref.read(expensesProvider);
   final expenses = expensesAsync.maybeWhen(
     data: (data) => data,
     orElse: () => <Expense>[],

@@ -40,22 +40,22 @@ class CreateExpenseUseCase implements UseCase<Expense, CreateExpenseParams> {
   /// Validate expense data before creation
   Either<Failure, Unit> _validateExpense(Expense expense) {
     if (expense.amount <= 0) {
-      return Left(ValidationFailure('Expense amount must be greater than zero'));
+      return Left(ValidationFailure(message: 'Expense amount must be greater than zero'));
     }
 
     if (expense.description.trim().isEmpty) {
-      return Left(ValidationFailure('Expense description cannot be empty'));
+      return Left(ValidationFailure(message: 'Expense description cannot be empty'));
     }
 
     if (expense.userId.isEmpty) {
-      return Left(ValidationFailure('User ID is required'));
+      return Left(ValidationFailure(message: 'User ID is required'));
     }
 
     if (expense.date.isAfter(DateTime.now().add(const Duration(days: 1)))) {
-      return Left(ValidationFailure('Expense date cannot be in the future'));
+      return Left(ValidationFailure(message: 'Expense date cannot be in the future'));
     }
 
-    return const Right(Unit.value);
+    return const Right(unit);
   }
 
   /// Generate a unique expense ID
@@ -76,13 +76,6 @@ class CreateExpenseParams extends UseCaseParams {
   List<Object?> get props => [expense];
 }
 
-/// Validation failure for business rule violations
-class ValidationFailure extends Failure {
-  const ValidationFailure(String message) : super(message: message);
-
-  @override
-  List<Object?> get props => [message];
-}
 
 /// Unexpected failure for system errors
 class UnexpectedFailure extends Failure {

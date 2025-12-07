@@ -25,9 +25,7 @@ class EncryptionService {
       _iv = encrypt.IV(await _generateSecureIV());
 
     } catch (e) {
-      throw InitializationFailure(
-        message: 'Failed to initialize encryption service: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to initialize encryption service: ${e.toString()}');
     }
   }
 
@@ -39,9 +37,7 @@ class EncryptionService {
       final encrypted = _encrypter.encrypt(plainText, iv: _iv);
       return encrypted.base64;
     } catch (e) {
-      throw EncryptionFailure(
-        message: 'Failed to encrypt data: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to encrypt data: ${e.toString()}');
     }
   }
 
@@ -54,9 +50,7 @@ class EncryptionService {
       final decrypted = _encrypter.decrypt(encrypted, iv: _iv);
       return decrypted;
     } catch (e) {
-      throw DecryptionFailure(
-        message: 'Failed to decrypt data: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to decrypt data: ${e.toString()}');
     }
   }
 
@@ -72,9 +66,7 @@ class EncryptionService {
       final combined = iv.bytes + encrypted.bytes;
       return base64Encode(combined);
     } catch (e) {
-      throw EncryptionFailure(
-        message: 'Failed to encrypt with AAD: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to encrypt with AAD: ${e.toString()}');
     }
   }
 
@@ -91,9 +83,7 @@ class EncryptionService {
       final decrypted = encrypter.decrypt(encrypted, iv: iv);
       return decrypted;
     } catch (e) {
-      throw DecryptionFailure(
-        message: 'Failed to decrypt with AAD: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to decrypt with AAD: ${e.toString()}');
     }
   }
 
@@ -137,9 +127,7 @@ class EncryptionService {
       final encrypted = _encrypter.encryptBytes(fileData, iv: _iv);
       return Uint8List.fromList(encrypted.bytes);
     } catch (e) {
-      throw EncryptionFailure(
-        message: 'Failed to encrypt file: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to encrypt file: ${e.toString()}');
     }
   }
 
@@ -150,9 +138,7 @@ class EncryptionService {
       final decrypted = _encrypter.decryptBytes(encrypted, iv: _iv);
       return Uint8List.fromList(decrypted);
     } catch (e) {
-      throw DecryptionFailure(
-        message: 'Failed to decrypt file: ${e.toString()}',
-      );
+      throw UnexpectedFailure.withMessage('Failed to decrypt file: ${e.toString()}');
     }
   }
 

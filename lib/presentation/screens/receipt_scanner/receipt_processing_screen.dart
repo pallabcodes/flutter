@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:finwise/core/navigation/app_router.dart';
 import 'package:finwise/domain/repositories/receipt_scanner_repository.dart';
 import 'package:finwise/presentation/providers/receipt_scanner_providers.dart';
 import 'package:finwise/presentation/theme/app_theme.dart';
@@ -217,7 +218,7 @@ class _ReceiptProcessingScreenState extends ConsumerState<ReceiptProcessingScree
           // Scan Result Card
           ReceiptScanResultCard(
             scanResult: scanResult,
-            onUseData: _useScanData,
+            onUseData: () => _useScanData(scanResult),
             onEditManually: _editManually,
           ),
 

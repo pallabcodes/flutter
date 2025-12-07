@@ -16,32 +16,30 @@ class SignInUseCase implements UseCase<AuthUser, SignInParams> {
   Future<Either<Failure, AuthUser>> call(SignInParams params) async {
     // Validate input
     final validationResult = _validateInput(params.email, params.password);
-    if (validationResult.isLeft) {
-      return validationResult;
-    }
-
-    // Attempt sign in
-    return await _authRepository.signInWithEmailAndPassword(
-      email: params.email.trim(),
-      password: params.password,
+    return validationResult.fold(
+      (failure) => Future.value(Left(failure)),
+      (_) => _authRepository.signInWithEmailAndPassword(
+        email: params.email.trim(),
+        password: params.password,
+      ),
     );
   }
 
   Either<Failure, Unit> _validateInput(String email, String password) {
     if (email.trim().isEmpty) {
-      return Left(ValidationFailure('Email is required'));
+      return Left(ValidationFailure(message: 'Email is required'));
     }
 
     if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email.trim())) {
-      return Left(ValidationFailure('Please enter a valid email address'));
+      return Left(ValidationFailure(message: 'Please enter a valid email address'));
     }
 
     if (password.isEmpty) {
-      return Left(ValidationFailure('Password is required'));
+      return Left(ValidationFailure(message: 'Password is required'));
     }
 
     if (password.length < 6) {
-      return Left(ValidationFailure('Password must be at least 6 characters'));
+      return Left(ValidationFailure(message: 'Password must be at least 6 characters'));
     }
 
     return const Right(unit);
@@ -77,15 +75,13 @@ class SignUpUseCase implements UseCase<AuthUser, SignUpParams> {
       params.password,
       params.confirmPassword,
     );
-    if (validationResult.isLeft) {
-      return validationResult;
-    }
-
-    // Attempt sign up
-    return await _authRepository.signUpWithEmailAndPassword(
-      email: params.email.trim(),
-      password: params.password,
-      displayName: params.displayName?.trim(),
+    return validationResult.fold(
+      (failure) => Future.value(Left(failure)),
+      (_) => _authRepository.signUpWithEmailAndPassword(
+        email: params.email.trim(),
+        password: params.password,
+        displayName: params.displayName?.trim(),
+      ),
     );
   }
 
@@ -95,35 +91,35 @@ class SignUpUseCase implements UseCase<AuthUser, SignUpParams> {
     String confirmPassword,
   ) {
     if (email.trim().isEmpty) {
-      return Left(ValidationFailure('Email is required'));
+      return Left(ValidationFailure(message: 'Email is required'));
     }
 
     if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email.trim())) {
-      return Left(ValidationFailure('Please enter a valid email address'));
+      return Left(ValidationFailure(message: 'Please enter a valid email address'));
     }
 
     if (password.isEmpty) {
-      return Left(ValidationFailure('Password is required'));
+      return Left(ValidationFailure(message: 'Password is required'));
     }
 
     if (password.length < 6) {
-      return Left(ValidationFailure('Password must be at least 6 characters'));
+      return Left(ValidationFailure(message: 'Password must be at least 6 characters'));
     }
 
     if (password != confirmPassword) {
-      return Left(ValidationFailure('Passwords do not match'));
+      return Left(ValidationFailure(message: 'Passwords do not match'));
     }
 
     if (password.contains(RegExp(r'[A-Z]')) == false) {
-      return Left(ValidationFailure('Password must contain at least one uppercase letter'));
+      return Left(ValidationFailure(message: 'Password must contain at least one uppercase letter'));
     }
 
     if (password.contains(RegExp(r'[a-z]')) == false) {
-      return Left(ValidationFailure('Password must contain at least one lowercase letter'));
+      return Left(ValidationFailure(message: 'Password must contain at least one lowercase letter'));
     }
 
     if (password.contains(RegExp(r'[0-9]')) == false) {
-      return Left(ValidationFailure('Password must contain at least one number'));
+      return Left(ValidationFailure(message: 'Password must contain at least one number'));
     }
 
     return const Right(unit);
@@ -150,7 +146,7 @@ class SignUpParams extends UseCaseParams {
 
 /// Use case for signing in with Google
 @injectable
-class SignInWithGoogleUseCase implements NoParamsUseCase<AuthUser> {
+class SignInWithGoogleUseCase extends NoParamsUseCase<AuthUser> {
   final AuthRepository _authRepository;
 
   SignInWithGoogleUseCase(this._authRepository);
@@ -163,7 +159,7 @@ class SignInWithGoogleUseCase implements NoParamsUseCase<AuthUser> {
 
 /// Use case for signing out
 @injectable
-class SignOutUseCase implements NoParamsUseCase<Unit> {
+class SignOutUseCase extends NoParamsUseCase<Unit> {
   final AuthRepository _authRepository;
 
   SignOutUseCase(this._authRepository);
@@ -176,7 +172,7 @@ class SignOutUseCase implements NoParamsUseCase<Unit> {
 
 /// Use case for getting current user
 @injectable
-class GetCurrentUserUseCase implements NoParamsUseCase<AuthUser?> {
+class GetCurrentUserUseCase extends NoParamsUseCase<AuthUser?> {
   final AuthRepository _authRepository;
 
   GetCurrentUserUseCase(this._authRepository);

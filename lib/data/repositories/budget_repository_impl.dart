@@ -6,6 +6,7 @@ import 'package:finwise/data/datasources/local/database/database.dart' as db;
 import 'package:finwise/data/datasources/local/database/tables/budget_table.dart' as db_budget;
 import 'package:finwise/data/datasources/remote/api_client.dart';
 import 'package:finwise/domain/entities/budget.dart';
+import 'package:finwise/domain/entities/expense.dart';
 import 'package:finwise/domain/repositories/budget_repository.dart';
 import 'package:injectable/injectable.dart';
 import 'package:drift/drift.dart' as drift;
@@ -219,7 +220,7 @@ class BudgetRepositoryImpl implements BudgetRepository {
   }
 
   /// Maps database budget model to domain entity
-  Budget _mapDatabaseBudgetToEntity(db_budget.Budget budget) {
+  Budget _mapDatabaseBudgetToEntity(db.Budget budget) {
     return Budget(
       id: budget.id,
       userId: budget.userId,

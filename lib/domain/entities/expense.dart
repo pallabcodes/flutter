@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:flutter/material.dart';
 
 part 'expense.freezed.dart';
 part 'expense.g.dart';

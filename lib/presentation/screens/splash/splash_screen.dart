@@ -1,3 +1,5 @@
+import 'package:finwise/core/navigation/app_router.dart';
+import 'package:finwise/core/navigation/route_guard.dart';
 import 'package:finwise/presentation/providers/app_startup_provider.dart';
 import 'package:finwise/presentation/theme/app_theme.dart';
 import 'package:finwise/presentation/screens/home/home_screen.dart';

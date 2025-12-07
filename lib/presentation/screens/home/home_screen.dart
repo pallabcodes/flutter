@@ -1,3 +1,4 @@
+import 'package:finwise/core/navigation/app_router.dart';
 import 'package:finwise/presentation/providers/expense_providers.dart';
 import 'package:finwise/presentation/providers/sample_data_provider.dart';
 import 'package:finwise/presentation/theme/app_theme.dart';
